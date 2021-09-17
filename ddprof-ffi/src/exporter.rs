@@ -232,7 +232,7 @@ unsafe fn try_into_vec_files<'a>(slice: Slice<'a, File>) -> Option<Vec<ddprof_ex
 
     for file in slice.into_slice().iter() {
         let name = file.name.try_into().ok()?;
-        let bytes: &[u8] = file.file?.as_ref().as_slice();
+        let bytes: &[u8] = file.file.as_ref()?.as_ref().as_slice();
         vec.push(ddprof_exporter::File { name, bytes });
     }
     Some(vec)

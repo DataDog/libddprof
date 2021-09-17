@@ -25,4 +25,4 @@ bash ffi-build.sh /opt/libddprof
 
 #### Build Dependencies
 
-Very recent Rust (1.54 ish?) with cargo.
+Rust 1.47 or newer with cargo. Some platforms may need protoc; others have it shipped in prost-build.
