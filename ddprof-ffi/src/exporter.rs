@@ -19,6 +19,17 @@ pub enum SendResult {
     Failure(Buffer),
 }
 
+#[repr(C)]
+pub enum NewResult {
+    Ok(Box<ProfileExporterV3>),
+    Err(Buffer),
+}
+
+#[export_name = "ddprof_ffi_NewResult_dtor"]
+pub extern "C" fn newresult_dtor(result: NewResult) {
+    std::mem::drop(result);
+}
+
 type ByteSlice<'a> = crate::Slice<'a, u8>;
 
 #[repr(C)]
@@ -163,15 +174,31 @@ pub extern "C" fn endpoint_agentless<'a>(
     EndpointV3::Agentless(site, api_key)
 }
 
-fn try_to_tags(tags: Slice<Tag>) -> Option<Vec<ddprof_exporter::Tag>> {
+struct EmptyTagError {}
+
+impl std::fmt::Display for EmptyTagError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "A tag name must not be empty.")
+    }
+}
+
+impl std::fmt::Debug for EmptyTagError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "A tag name must not be empty.")
+    }
+}
+
+impl std::error::Error for EmptyTagError {}
+
+fn try_to_tags(tags: Slice<Tag>) -> Result<Vec<ddprof_exporter::Tag>, Box<dyn std::error::Error>> {
     let mut converted_tags = Vec::with_capacity(tags.len);
     for tag in unsafe { tags.into_slice() }.iter() {
-        let name: &str = tag.name.try_into().ok()?;
-        let value: &str = tag.value.try_into().ok()?;
+        let name: &str = tag.name.try_into()?;
+        let value: &str = tag.value.try_into()?;
 
         // If a tag name is empty, that's an error
         if name.is_empty() {
-            return None;
+            return Err(Box::new(EmptyTagError {}));
         }
 
         /* However, empty tag values are treated as if the tag was not sent;
@@ -185,24 +212,29 @@ fn try_to_tags(tags: Slice<Tag>) -> Option<Vec<ddprof_exporter::Tag>> {
             });
         }
     }
-    Some(converted_tags)
+    Ok(converted_tags)
 }
 
-fn try_to_url(slice: ByteSlice) -> Option<reqwest::Url> {
-    let str = slice.try_into().ok()?;
-    reqwest::Url::parse(str).ok()
+fn try_to_url(slice: ByteSlice) -> Result<reqwest::Url, Box<dyn std::error::Error>> {
+    let str = slice.try_into()?;
+    match reqwest::Url::parse(str) {
+        Ok(url) => Ok(url),
+        Err(err) => Err(Box::new(err)),
+    }
 }
 
-fn try_to_endpoint(endpoint: EndpointV3) -> Option<ddprof_exporter::Endpoint> {
+fn try_to_endpoint(
+    endpoint: EndpointV3,
+) -> Result<ddprof_exporter::Endpoint, Box<dyn std::error::Error>> {
     match endpoint {
         EndpointV3::Agent(url) => {
             let base_url = try_to_url(url)?;
-            ddprof_exporter::Endpoint::agent(base_url).ok()
+            ddprof_exporter::Endpoint::agent(base_url)
         }
         EndpointV3::Agentless(site, api_key) => {
-            let site_str: &str = site.try_into().ok()?;
-            let api_key_str: &str = api_key.try_into().ok()?;
-            ddprof_exporter::Endpoint::agentless(site_str, api_key_str).ok()
+            let site_str: &str = site.try_into()?;
+            let api_key_str: &str = api_key.try_into()?;
+            ddprof_exporter::Endpoint::agentless(site_str, api_key_str)
         }
     }
 }
@@ -212,13 +244,22 @@ pub extern "C" fn profile_exporter_new(
     family: ByteSlice,
     tags: Slice<Tag>,
     endpoint: EndpointV3,
-) -> Option<Box<ProfileExporterV3>> {
-    let converted_family: &str = family.try_into().ok()?;
-    let converted_tags = try_to_tags(tags)?;
-    let converted_endpoint = try_to_endpoint(endpoint)?;
-    match ProfileExporterV3::new(converted_family, converted_tags, converted_endpoint) {
-        Ok(exporter) => Some(Box::new(exporter)),
-        Err(_) => None,
+) -> NewResult {
+    match || -> Result<ProfileExporterV3, Box<dyn std::error::Error>> {
+        let converted_family: &str = family.try_into()?;
+        let converted_tags = try_to_tags(tags)?;
+        let converted_endpoint = try_to_endpoint(endpoint)?;
+        ProfileExporterV3::new(converted_family, converted_tags, converted_endpoint)
+    }() {
+        Ok(exporter) => NewResult::Ok(Box::new(exporter)),
+        Err(err) => {
+            // the message is at least 17 characters; the next power of 2 is 32
+            let mut vec = Vec::with_capacity(32);
+            /* currently, the io write on a vec cannot fail so I am accepting
+             * the panic. */
+            write!(vec, "Failed to export: {}", err).expect("write on vec to succeed");
+            NewResult::Err(Buffer::from_vec(vec))
+        }
     }
 }
 
@@ -325,6 +366,17 @@ mod test {
     }
 
     #[test]
+    fn empty_tag_name() {
+        let tag = Tag {
+            name: Slice::new("".as_ptr(), 0),
+            value: Slice::new("1".as_ptr(), 1),
+        };
+        let tags = Slice::new((&tag) as *const Tag, 1);
+        let result = try_to_tags(tags);
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn profile_exporter_v3_new_and_delete() {
         let family = ByteSlice::new("native".as_ptr(), "native".len());
 
@@ -336,10 +388,14 @@ mod test {
         let base_url = "https://localhost:1337";
         let endpoint = endpoint_agent(ByteSlice::new(base_url.as_ptr(), base_url.len()));
 
-        let exporter =
-            profile_exporter_new(family, Slice::new(tags.as_ptr(), tags.len()), endpoint)
-                .expect("exporter to be constructed");
+        let result = profile_exporter_new(family, Slice::new(tags.as_ptr(), tags.len()), endpoint);
 
-        profile_exporter_delete(Some(exporter));
+        match result {
+            NewResult::Ok(exporter) => profile_exporter_delete(Some(exporter)),
+            NewResult::Err(message) => {
+                std::mem::drop(message);
+                assert!(false)
+            }
+        }
     }
 }
