@@ -394,7 +394,7 @@ mod test {
             NewResult::Ok(exporter) => profile_exporter_delete(Some(exporter)),
             NewResult::Err(message) => {
                 std::mem::drop(message);
-                assert!(false)
+                panic!("Should not occur!")
             }
         }
     }
