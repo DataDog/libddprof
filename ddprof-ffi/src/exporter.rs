@@ -265,7 +265,7 @@ pub extern "C" fn profile_exporter_new(
             let mut vec = Vec::with_capacity(32);
             /* currently, the io write on a vec cannot fail so I am accepting
              * the panic. */
-            write!(vec, "Failed to export: {}", err).expect("write on vec to succeed");
+            write!(vec, "{}", err).expect("write on vec to succeed");
             NewResult::Err(Buffer::from_vec(vec))
         }
     }
