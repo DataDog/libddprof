@@ -26,8 +26,16 @@ pub enum NewResult {
 }
 
 #[export_name = "ddprof_ffi_NewResult_dtor"]
-pub extern "C" fn newresult_dtor(result: NewResult) {
-    std::mem::drop(result);
+pub unsafe extern "C" fn newresult_dtor(result: NewResult) {
+    match result {
+        NewResult::Ok(ptr) => {
+            let exporter = Box::from_raw(ptr);
+            std::mem::drop(exporter);
+        }
+        NewResult::Err(message) => {
+            std::mem::drop(message);
+        }
+    }
 }
 
 type ByteSlice<'a> = crate::Slice<'a, u8>;
