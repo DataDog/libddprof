@@ -21,7 +21,7 @@ pub enum SendResult {
 
 #[repr(C)]
 pub enum NewResult {
-    Ok(Box<ProfileExporterV3>),
+    Ok(*mut ProfileExporterV3),
     Err(Buffer),
 }
 
@@ -251,7 +251,7 @@ pub extern "C" fn profile_exporter_new(
         let converted_endpoint = try_to_endpoint(endpoint)?;
         ProfileExporterV3::new(converted_family, converted_tags, converted_endpoint)
     }() {
-        Ok(exporter) => NewResult::Ok(Box::new(exporter)),
+        Ok(exporter) => NewResult::Ok(Box::into_raw(Box::new(exporter))),
         Err(err) => {
             // the message is at least 17 characters; the next power of 2 is 32
             let mut vec = Vec::with_capacity(32);
@@ -391,7 +391,9 @@ mod test {
         let result = profile_exporter_new(family, Slice::new(tags.as_ptr(), tags.len()), endpoint);
 
         match result {
-            NewResult::Ok(exporter) => profile_exporter_delete(Some(exporter)),
+            NewResult::Ok(exporter) => unsafe {
+                profile_exporter_delete(Some(Box::from_raw(exporter)))
+            },
             NewResult::Err(message) => {
                 std::mem::drop(message);
                 panic!("Should not occur!")
