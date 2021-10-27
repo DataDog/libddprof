@@ -20,19 +20,19 @@ pub enum SendResult {
 }
 
 #[repr(C)]
-pub enum NewResult {
+pub enum NewProfileExporterV3Result {
     Ok(*mut ProfileExporterV3),
     Err(Buffer),
 }
 
-#[export_name = "ddprof_ffi_NewResult_dtor"]
-pub unsafe extern "C" fn newresult_dtor(result: NewResult) {
+#[export_name = "ddprof_ffi_NewProfileExporterV3Result_dtor"]
+pub unsafe extern "C" fn new_profile_exporter_v3_result_dtor(result: NewProfileExporterV3Result) {
     match result {
-        NewResult::Ok(ptr) => {
+        NewProfileExporterV3Result::Ok(ptr) => {
             let exporter = Box::from_raw(ptr);
             std::mem::drop(exporter);
         }
-        NewResult::Err(message) => {
+        NewProfileExporterV3Result::Err(message) => {
             std::mem::drop(message);
         }
     }
@@ -255,15 +255,15 @@ pub extern "C" fn profile_exporter_new(
     family: ByteSlice,
     tags: Slice<Tag>,
     endpoint: EndpointV3,
-) -> NewResult {
+) -> NewProfileExporterV3Result {
     match || -> Result<ProfileExporterV3, Box<dyn std::error::Error>> {
         let converted_family: &str = family.try_into()?;
         let converted_tags = try_to_tags(tags)?;
         let converted_endpoint = try_to_endpoint(endpoint)?;
         ProfileExporterV3::new(converted_family, converted_tags, converted_endpoint)
     }() {
-        Ok(exporter) => NewResult::Ok(Box::into_raw(Box::new(exporter))),
-        Err(err) => NewResult::Err(error_into_buffer(err)),
+        Ok(exporter) => NewProfileExporterV3Result::Ok(Box::into_raw(Box::new(exporter))),
+        Err(err) => NewProfileExporterV3Result::Err(error_into_buffer(err)),
     }
 }
 
@@ -391,10 +391,10 @@ mod test {
         let result = profile_exporter_new(family, Slice::new(tags.as_ptr(), tags.len()), endpoint);
 
         match result {
-            NewResult::Ok(exporter) => unsafe {
+            NewProfileExporterV3Result::Ok(exporter) => unsafe {
                 profile_exporter_delete(Some(Box::from_raw(exporter)))
             },
-            NewResult::Err(message) => {
+            NewProfileExporterV3Result::Err(message) => {
                 std::mem::drop(message);
                 panic!("Should not occur!")
             }
