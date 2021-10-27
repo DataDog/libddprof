@@ -104,14 +104,7 @@ pub unsafe extern "C" fn exporter_send(
                 exporter.send(method, url_str, headers_map, body_slice, timeout)
             }() {
                 Ok(response) => SendResult::HttpResponse(HttpStatus(response.status().as_u16())),
-                Err(err) => {
-                    // the message is at least 17 characters; the next power of 2 is 32
-                    let mut vec = Vec::with_capacity(32);
-                    /* currently, the io write on a vec cannot fail so I am accepting
-                     * the panic. */
-                    write!(vec, "Failed to export: {}", err).expect("write on vec to succeed");
-                    SendResult::Failure(Buffer::from_vec(vec))
-                }
+                Err(err) => SendResult::Failure(error_into_buffer(err)),
             }
         }
     }
@@ -247,6 +240,16 @@ fn try_to_endpoint(
     }
 }
 
+fn error_into_buffer(err: Box<dyn std::error::Error>) -> Buffer {
+    let mut vec = Vec::new();
+    /* Ignore the possible but highly unlikely write failure into a
+     * Vec. In case this happens, it will be an empty message, which
+     * will be confusing but safe, and I'm not sure how else to handle
+     * it. */
+    let _ = write!(vec, "{}", err);
+    Buffer::from_vec(vec)
+}
+
 #[export_name = "ddprof_ffi_ProfileExporterV3_new"]
 pub extern "C" fn profile_exporter_new(
     family: ByteSlice,
@@ -260,14 +263,7 @@ pub extern "C" fn profile_exporter_new(
         ProfileExporterV3::new(converted_family, converted_tags, converted_endpoint)
     }() {
         Ok(exporter) => NewResult::Ok(Box::into_raw(Box::new(exporter))),
-        Err(err) => {
-            // the message is at least 17 characters; the next power of 2 is 32
-            let mut vec = Vec::with_capacity(32);
-            /* currently, the io write on a vec cannot fail so I am accepting
-             * the panic. */
-            write!(vec, "{}", err).expect("write on vec to succeed");
-            NewResult::Err(Buffer::from_vec(vec))
-        }
+        Err(err) => NewResult::Err(error_into_buffer(err)),
     }
 }
 
@@ -354,11 +350,7 @@ pub unsafe extern "C" fn profile_exporter_send(
         Ok(HttpStatus(response.status().as_u16()))
     }() {
         Ok(code) => SendResult::HttpResponse(code),
-        Err(err) => {
-            let mut vec = Vec::with_capacity(32);
-            write!(vec, "{}", err).expect("write to vec to succeed");
-            SendResult::Failure(Buffer::from_vec(vec))
-        }
+        Err(err) => SendResult::Failure(error_into_buffer(err)),
     }
 }
 
