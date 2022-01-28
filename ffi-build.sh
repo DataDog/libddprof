@@ -64,7 +64,13 @@ actual_native_static_libs="$(cargo rustc --release --target ${target} -- --print
 echo "Actual native-static-libs:${actual_native_static_libs}"
 echo "Expected native-static-libs:${expected_native_static_libs}"
 
-[ "${expected_native_static_libs}" = "${actual_native_static_libs}" ]
+# compute libs in $actual_native_static_libs but not in $expected_native_static_libs
+unexpected_native_libs=$(comm -13 <(echo $expected_native_static_libs | sed 's/ -/\n-/g' | sort -u) <(echo $actual_native_static_libs | sed 's/ -/\n-/g' | sort -u))
+if [ -n "$unexpected_native_libs" ]; then
+    echo "Error - More native static libraries are required for linking than expected:" 1>&2
+    echo $unexpected_native_libs 1>&2
+    exit 1
+fi
 cd -
 
 echo "Generating the ddprof/ffi.h header..."
