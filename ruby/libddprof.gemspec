@@ -14,6 +14,7 @@ Gem::Specification.new do |spec|
   spec.description =
     "libddprof contains implementation bits used by Datadog's ddtrace gem as part of its Continuous Profiler feature."
   spec.homepage = "https://docs.datadoghq.com/tracing/profiler/"
+  spec.license = "Apache-2.0"
   spec.required_ruby_version = ">= 2.1.0"
 
   spec.metadata["allowed_push_host"] = "https://rubygems.org"
