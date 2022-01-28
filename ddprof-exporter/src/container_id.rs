@@ -34,7 +34,7 @@ Following environments are supported:
      `11:hugetlb:/ecs/55091c13-b8cf-4801-b527-f4601742204d/432624d2150b349fe35ba397284dea788c2bf66b885d14dfc1569b01890ca7da`
     - Fargate 1.4+:
       Here we match a task id with a suffix
-      `1:name=systemd:/ecs/34dc0b5e626f2c5c4c5170e34b10e765-1234567890`
+      `1:name=systemd:/ecs/8cd79a803caf4d2aa945152e934a5c00/8cd79a803caf4d2aa945152e934a5c00-1053176469`
 */
 
 const CGROUP_PATH: &str = "/proc/self/cgroup";
@@ -149,7 +149,7 @@ mod tests {
             // parse a Fargate container ID
             "cgroup.fargate" => Some("432624d2150b349fe35ba397284dea788c2bf66b885d14dfc1569b01890ca7da"),
             // parse a Fargate 1.4+ container ID
-            "cgroup.fargate.1.4" => Some("34dc0b5e626f2c5c4c5170e34b10e765-1234567890"),
+            "cgroup.fargate.1.4" => Some("8cd79a803caf4d2aa945152e934a5c00-1053176469"),
 
             // Whitespace around the matching ID is permitted so long as it is matched within a valid cgroup line.
             // parse a container ID with leading and trailing whitespace
