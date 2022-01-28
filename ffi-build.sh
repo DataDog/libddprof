@@ -52,8 +52,6 @@ sed < cmake/DDProfConfig.cmake.in \
 
 cp -v LICENSE LICENSE-3rdparty.yml NOTICE "$destdir/"
 
-export RUSTFLAGS="${RUSTFLAGS:- -C relocation-model=pic}"
-
 echo "Building the libddprof_ffi.a library (may take some time)..."
 cargo build --release --target ${target}
 cp -v target/${target}/release/libddprof_ffi.a "$destdir/lib/"
