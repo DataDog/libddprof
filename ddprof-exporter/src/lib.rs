@@ -12,6 +12,7 @@ use tokio::runtime::Runtime;
 mod container_id;
 
 const DURATION_ZERO: std::time::Duration = std::time::Duration::from_millis(0);
+const DATADOG_CONTAINER_ID_HEADER: &str = "Datadog-Container-ID";
 
 pub struct Exporter {
     client: reqwest::Client,
@@ -88,29 +89,12 @@ impl ProfileExporterV3 {
         tags: Vec<Tag>,
         endpoint: Endpoint,
     ) -> Result<ProfileExporterV3, Box<dyn Error>> {
-        let mut exporter = Self {
+        Ok(Self {
             exporter: Exporter::new()?,
             endpoint,
             family: family.into(),
             tags,
-        };
-        exporter.add_useful_tags();
-        Ok(exporter)
-    }
-
-    /// Add some useful tags
-    /// Currently only add Datadog-Container-ID if not already present
-    fn add_useful_tags(&mut self) {
-        const DATADOG_CONTAINER_ID_TAG: &str = "Datadog-Container-ID";
-
-        if !self.tags.iter().any(|x| x.name == DATADOG_CONTAINER_ID_TAG) {
-            if let Some(container_id) = container_id::get_container_id() {
-                self.tags.push(Tag {
-                    name: Cow::Borrowed(DATADOG_CONTAINER_ID_TAG),
-                    value: Cow::Borrowed(container_id),
-                });
-            }
-        }
+        })
     }
 
     /// Build a Request object representing the profile information provided.
@@ -159,6 +143,10 @@ impl ProfileExporterV3 {
                 "DD-API-KEY",
                 HeaderValue::from_str(api_key.as_str()).expect("TODO"),
             );
+        }
+
+        if let Some(container_id) = container_id::get_container_id() {
+            builder = builder.header(DATADOG_CONTAINER_ID_HEADER, container_id);
         }
 
         builder.multipart(form).build()
