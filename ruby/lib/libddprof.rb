@@ -9,7 +9,7 @@ module Libddprof
   end
 
   def self.available_binaries
-    Dir.children(vendor_directory)
+    File.directory?(vendor_directory) ? Dir.children(vendor_directory) : []
   end
 
   def self.pkgconfig_folder

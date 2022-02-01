@@ -24,9 +24,27 @@ RSpec.describe Libddprof do
 
     after do
       FileUtils.remove_dir(temporary_directory)
+    rescue Errno::ENOENT => _e
+      # Do nothing, it's ok
     end
 
     context "when no binaries are available in the vendor directory" do
+      describe ".no_binaries?" do
+        it { expect(Libddprof.no_binaries?).to be true }
+      end
+
+      describe ".available_binaries" do
+        it { expect(Libddprof.available_binaries).to be_empty }
+      end
+
+      describe ".pkgconfig_folder" do
+        it { expect(Libddprof.pkgconfig_folder).to be nil }
+      end
+    end
+
+    context "when vendor directory does not exist" do
+      let(:temporary_directory) { "does/not/exist" }
+
       describe ".no_binaries?" do
         it { expect(Libddprof.no_binaries?).to be true }
       end
