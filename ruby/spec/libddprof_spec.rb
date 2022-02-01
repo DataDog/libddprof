@@ -51,7 +51,7 @@ RSpec.describe Libddprof do
       end
 
       describe ".available_binaries" do
-        it { expect(Libddprof.available_binaries).to eq ["386-freedos", "mipsel-linux"] }
+        it { expect(Libddprof.available_binaries).to contain_exactly("386-freedos", "mipsel-linux") }
       end
 
       context "for the current platform" do
