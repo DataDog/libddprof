@@ -1,5 +1,7 @@
 # frozen_string_literal: true
 
+require "pry"
+
 require "libddprof"
 
 RSpec.configure do |config|
