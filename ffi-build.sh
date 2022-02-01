@@ -32,7 +32,7 @@ case "$target" in
         native_static_libs="${expected_native_static_libs}"
         ;;
     "x86_64-unknown-linux-gnu")
-        expected_native_static_libs=" -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread -lutil -ldl -lutil"
+        expected_native_static_libs=" -ldl -lrt -lpthread -lgcc_s -lc -lm -lutil"
         native_static_libs=" -ldl -lrt -lpthread -lc -lm -lrt -lpthread -lutil -ldl -lutil"
         ;;
     *)
@@ -64,7 +64,10 @@ actual_native_static_libs="$(cargo rustc --release --target ${target} -- --print
 echo "Actual native-static-libs:${actual_native_static_libs}"
 echo "Expected native-static-libs:${expected_native_static_libs}"
 
-# compute libs in $actual_native_static_libs but not in $expected_native_static_libs
+# Compare unique elements between expected and actual native static libs.
+# If actual libs is different from expected libs but still a subset of expected libs
+# (ie. we will overlink compared to what is actually needed), this is not considered as an error.
+# Raise an error only if some libs are in actual libs but not in expected libs.
 unexpected_native_libs=$(comm -13 <(echo $expected_native_static_libs | sed 's/ -/\n-/g' | sort -u) <(echo $actual_native_static_libs | sed 's/ -/\n-/g' | sort -u))
 if [ -n "$unexpected_native_libs" ]; then
     echo "Error - More native static libraries are required for linking than expected:" 1>&2
