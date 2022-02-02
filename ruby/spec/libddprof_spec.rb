@@ -29,8 +29,8 @@ RSpec.describe Libddprof do
     end
 
     context "when no binaries are available in the vendor directory" do
-      describe ".no_binaries?" do
-        it { expect(Libddprof.no_binaries?).to be true }
+      describe ".binaries?" do
+        it { expect(Libddprof.binaries?).to be false }
       end
 
       describe ".available_binaries" do
@@ -45,8 +45,8 @@ RSpec.describe Libddprof do
     context "when vendor directory does not exist" do
       let(:temporary_directory) { "does/not/exist" }
 
-      describe ".no_binaries?" do
-        it { expect(Libddprof.no_binaries?).to be true }
+      describe ".binaries?" do
+        it { expect(Libddprof.binaries?).to be false }
       end
 
       describe ".available_binaries" do
@@ -64,8 +64,8 @@ RSpec.describe Libddprof do
         Dir.mkdir("#{temporary_directory}/mipsel-linux")
       end
 
-      describe ".no_binaries?" do
-        it { expect(Libddprof.no_binaries?).to be false }
+      describe ".binaries?" do
+        it { expect(Libddprof.binaries?).to be true }
       end
 
       describe ".available_binaries" do

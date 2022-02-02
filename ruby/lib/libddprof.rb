@@ -3,11 +3,12 @@
 require_relative "libddprof/version"
 
 module Libddprof
-  # Is this a no-op libddprof release without binaries?
-  def self.no_binaries?
-    available_binaries.empty?
+  # Does this libddprof release include any binaries?
+  def self.binaries?
+    available_binaries.any?
   end
 
+  # This should only be used for debugging/logging
   def self.available_binaries
     File.directory?(vendor_directory) ? Dir.children(vendor_directory) : []
   end
