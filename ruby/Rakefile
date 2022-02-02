@@ -38,11 +38,13 @@ task :fetch do
     target_url = "https://github.com/DataDog/libddprof/releases/download/v#{Libddprof::LIB_VERSION}/#{file}"
 
     if File.exist?(target_file)
-      if Digest::SHA256.hexdigest(File.read(target_file)) == sha256
+      target_file_hash = Digest::SHA256.hexdigest(File.read(target_file))
+
+      if target_file_hash == sha256
         puts "Found #{target_file} matching the expected sha256, skipping download"
         next
       else
-        puts "Found #{target_file} BUT IT DID NOT MATCH THE EXPECTED sha256, skipping download"
+        puts "Found #{target_file} with hash (#{target_file_hash}) BUT IT DID NOT MATCH THE EXPECTED sha256 (#{sha256}), downloading it again..."
       end
     end
 
