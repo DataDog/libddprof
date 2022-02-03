@@ -47,7 +47,7 @@ sed < ddprof_ffi.pc.in "s/@DDProf_FFI_VERSION@/${version}/g" \
     > "$destdir/lib/pkgconfig/ddprof_ffi.pc"
 
 sed < cmake/DDProfConfig.cmake.in \
-    > $destdir/cmake/DDProfConfig.cmake \
+    > "$destdir/cmake/DDProfConfig.cmake" \
     "s/@DDProf_FFI_LIBRARIES@/${native_static_libs}/g"
 
 cp -v LICENSE LICENSE-3rdparty.yml NOTICE "$destdir/"
@@ -55,12 +55,12 @@ cp -v LICENSE LICENSE-3rdparty.yml NOTICE "$destdir/"
 export RUSTFLAGS="${RUSTFLAGS:- -C relocation-model=pic}"
 
 echo "Building the libddprof_ffi.a library (may take some time)..."
-cargo build --release --target ${target}
-cp -v target/${target}/release/libddprof_ffi.a "$destdir/lib/"
+cargo build --release --target "${target}"
+cp -v "target/${target}/release/libddprof_ffi.a" "$destdir/lib/"
 
 echo "Checking that native-static-libs are as expected for this platform..."
 cd ddprof-ffi
-actual_native_static_libs="$(cargo rustc --release --target ${target} -- --print=native-static-libs 2>&1 | awk -F ':' '/note: native-static-libs:/ { print $3 }')"
+actual_native_static_libs="$(cargo rustc --release --target "${target}" -- --print=native-static-libs 2>&1 | awk -F ':' '/note: native-static-libs:/ { print $3 }')"
 echo "Actual native-static-libs:${actual_native_static_libs}"
 echo "Expected native-static-libs:${expected_native_static_libs}"
 
