@@ -68,7 +68,12 @@ echo "Expected native-static-libs:${expected_native_static_libs}"
 # If actual libs is different from expected libs but still a subset of expected libs
 # (ie. we will overlink compared to what is actually needed), this is not considered as an error.
 # Raise an error only if some libs are in actual libs but not in expected libs.
-unexpected_native_libs=$(comm -13 <(echo $expected_native_static_libs | sed 's/ -/\n-/g' | sort -u) <(echo $actual_native_static_libs | sed 's/ -/\n-/g' | sort -u))
+
+# trim leading and trailing spaces, then split the string on " -" by inserting new lines and sort lines while removing duplicates
+unique_expected_libs=$(echo "$expected_native_static_libs "| awk '{ gsub(/^[ \t]+|[ \t]+$/, "");gsub(/ +-/,"\n-")};1' | sort -u)
+unique_libs=$(echo "$actual_native_static_libs "| awk '{ gsub(/^[ \t]+|[ \t]+$/, "");gsub(/ +-/,"\n-")};1' | sort -u)
+
+unexpected_native_libs=$(comm -13 <(echo "$unique_expected_libs") <(echo "$unique_libs"))
 if [ -n "$unexpected_native_libs" ]; then
     echo "Error - More native static libraries are required for linking than expected:" 1>&2
     echo $unexpected_native_libs 1>&2
