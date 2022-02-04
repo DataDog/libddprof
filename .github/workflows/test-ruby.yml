@@ -2,7 +2,7 @@ name: Ruby gem scaffolding
 on:
   push:
     paths:
-      - 'ruby/**'
+      - 'ruby/**' # Only run action when ruby-related things are touched
 
 jobs:
   test:
