@@ -1,5 +1,8 @@
 name: Ruby gem scaffolding
-on: [push]
+on:
+  push:
+    paths:
+      - 'ruby/**'
 
 jobs:
   test:
