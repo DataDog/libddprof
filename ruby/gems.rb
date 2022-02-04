@@ -8,6 +8,6 @@ gemspec
 gem "rake", "~> 12.0"
 gem "rspec", "~> 3.10"
 gem "standard", "~> 1.3" unless RUBY_VERSION < "2.5"
-gem "http", "~> 3.0" unless RUBY_VERSION < "2.5"
+gem "http", "~> 5.0" unless RUBY_VERSION < "2.5"
 gem "pry"
 gem "pry-byebug" unless RUBY_VERSION > "3.1"
