@@ -14,3 +14,5 @@ debug = 2 # full debug info
 
 [profile.release]
 debug = 1 # line tables only
+lto = true
+codegen-units = 1

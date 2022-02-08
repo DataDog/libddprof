@@ -54,9 +54,11 @@ cp -v LICENSE LICENSE-3rdparty.yml NOTICE "$destdir/"
 
 export RUSTFLAGS="${RUSTFLAGS:- -C relocation-model=pic}"
 
-echo "Building the libddprof_ffi.a library (may take some time)..."
+echo "Building the libddprof_ffi library (may take some time)..."
 cargo build --release --target "${target}"
-cp -v "target/${target}/release/libddprof_ffi.a" "$destdir/lib/"
+cp -v "target/${target}/release/libddprof_ffi.a" "target/${target}/release/libddprof_ffi.so" "$destdir/lib/"
+# Remove .llvmbc section which is not useful for clients
+objcopy --remove-section .llvmbc "$destdir/lib/libddprof_ffi.a"
 
 echo "Checking that native-static-libs are as expected for this platform..."
 cd ddprof-ffi
