@@ -13,5 +13,5 @@ Description: Contains common code used to implement Datadog's Continuous Profile
 Version: @DDProf_FFI_VERSION@
 Requires:
 Libs: -L${libdir} -lddprof_ffi
-Libs.private: @DDProf_FFI_LIBRARIES@
+Libs.private:
 Cflags: -I${includedir}

@@ -45,7 +45,6 @@ esac
 
 echo "Recognized platform '${target}'. Adding libs: ${native_static_libs}"
 sed < ddprof_ffi.pc.in "s/@DDProf_FFI_VERSION@/${version}/g" \
-    | sed "s/@DDProf_FFI_LIBRARIES@/${native_static_libs}/g" \
     > "$destdir/lib/pkgconfig/ddprof_ffi.pc"
 
 sed < ddprof_ffi-static.pc.in "s/@DDProf_FFI_VERSION@/${version}/g" \
