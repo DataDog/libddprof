@@ -31,11 +31,7 @@ case "$target" in
         expected_native_static_libs=" -framework Security -liconv -lSystem -lresolv -lc -lm -liconv"
         native_static_libs="${expected_native_static_libs}"
         ;;
-    "x86_64-unknown-linux-gnu")
-        expected_native_static_libs=" -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread -lutil -ldl -lutil"
-        native_static_libs=" -ldl -lrt -lpthread -lc -lm -lrt -lpthread -lutil -ldl -lutil"
-        ;;
-    "aarch64-unknown-linux-gnu")
+    "x86_64-unknown-linux-gnu"|"aarch64-unknown-linux-gnu")
         expected_native_static_libs=" -ldl -lrt -lpthread -lgcc_s -lc -lm -lrt -lpthread -lutil -ldl -lutil"
         native_static_libs=" -ldl -lrt -lpthread -lc -lm -lrt -lpthread -lutil -ldl -lutil"
         ;;
