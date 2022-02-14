@@ -13,6 +13,7 @@ mkdir -v -p "$destdir/include/ddprof" "$destdir/lib/pkgconfig" "$destdir/cmake"
 version=$(awk -F\" '$1 ~ /^version/ { print $2 }' < ddprof-ffi/Cargo.toml)
 target="$(rustc -vV | awk '/^host:/ { print $2 }')"
 shared_library_suffix=".so"
+remove_rpath=0
 
 # Rust provides this note about the link libraries:
 # note: Link against the following native artifacts when linking against this
@@ -27,6 +28,8 @@ case "$target" in
     "x86_64-alpine-linux-musl"|"aarch64-alpine-linux-musl")
         expected_native_static_libs=" -lssp_nonshared -lgcc_s -lc"
         native_static_libs=" -lssp_nonshared -lc"
+        # on alpine musl, Rust adds some weird runpath to cdylibs
+        remove_rpath=1
         ;;
     "x86_64-apple-darwin")
         expected_native_static_libs=" -framework Security -liconv -lSystem -lresolv -lc -lm -liconv"
@@ -62,6 +65,10 @@ export RUSTFLAGS="${RUSTFLAGS:- -C relocation-model=pic}"
 echo "Building the libddprof_ffi library (may take some time)..."
 cargo build --release --target "${target}"
 cp -v "target/${target}/release/libddprof_ffi.a" "target/${target}/release/libddprof_ffi${shared_library_suffix}" "$destdir/lib/"
+
+if [[ "$remove_rpath" -eq 1 ]]; then
+    patchelf --remove-rpath "$destdir/lib/libddprof_ffi${shared_library_suffix}"
+fi
 
 # objcopy might not be available on OSX
 if command -v objcopy > /dev/null; then
