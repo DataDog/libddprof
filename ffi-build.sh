@@ -70,7 +70,7 @@ if [[ "$remove_rpath" -eq 1 ]]; then
     patchelf --remove-rpath "$destdir/lib/libddprof_ffi${shared_library_suffix}"
 fi
 
-# objcopy might not be available on OSX
+# objcopy might not be available on macOS
 if command -v objcopy > /dev/null; then
     # Remove .llvmbc section which is not useful for clients
     objcopy --remove-section .llvmbc "$destdir/lib/libddprof_ffi.a"
