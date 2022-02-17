@@ -23,5 +23,5 @@ jobs:
         uses: actions/cache@v2
         with:
           path: "~/.cache/bazel"
-          key: bazel
-      - run: bazel build ...
+          key: ${{ runner.os }}-bazel
+      - run: bazel test ...
