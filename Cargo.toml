@@ -32,3 +32,11 @@ targets = [
 default_gen_buildrs = true
 experimental_api = true
 genmode = "Remote"
+
+[workspace.metadata.raze.crates.ring.'*']
+compile_data_attr = "glob([\"**/*.der\"])"
+
+
+[workspace.metadata.raze.crates.webpki.'*']
+compile_data_attr = "glob([\"**/*.der\"])"
+
