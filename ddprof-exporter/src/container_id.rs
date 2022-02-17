@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn file_parsing() {
-        let test_root_dir = Path::new(concat!(env!("CARGO_MANIFEST_DIR"), "/tests"));
+        let test_root_dir = Path::new(std::env::var("CARGO_MANIFEST_DIR").unwrap().as_str()).join("tests");
 
         let test_files = hashmap! {
             // parse a Docker container ID"

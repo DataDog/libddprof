@@ -12,6 +12,8 @@ cmake-build-debug
 deliverables
 target
 tmp
+cargo
+bazel-*
 
 #==============================================================================#
 # Files to ignore
@@ -21,4 +23,3 @@ tmp
 Cargo.lock # this is ignored so you don't update by accident, but is committed.
 docker-sync.yml
 
-cargo/
