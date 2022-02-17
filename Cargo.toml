@@ -20,7 +20,6 @@ opt-level = "s" # optimize for size
 
 [workspace.metadata.raze]
 workspace_path = "//cargo"
-package_aliases_dir = "."
 
 # The set of targets to generate BUILD rules for.
 targets = [
@@ -29,6 +28,7 @@ targets = [
     "x86_64-unknown-linux-gnu",
 ]
 
-render_package_aliases = false
+# render_package_aliases = false
 default_gen_buildrs = true
+experimental_api = true
 genmode = "Remote"
