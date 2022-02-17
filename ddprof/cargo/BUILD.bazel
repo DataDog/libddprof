@@ -1,0 +1,139 @@
+"""
+@generated
+cargo-raze generated Bazel file.
+
+DO NOT EDIT! Replaced on runs of cargo-raze
+"""
+
+package(default_visibility = ["//visibility:public"])
+
+licenses([
+    "notice",  # See individual crates for specific licenses
+])
+
+# Aliased targets
+alias(
+    name = "bytes",
+    actual = "@raze__bytes__1_1_0//:bytes",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "chrono",
+    actual = "@raze__chrono__0_4_19//:chrono",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "futures",
+    actual = "@raze__futures__0_3_17//:futures",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "http",
+    actual = "@raze__http__0_2_5//:http",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "indexmap",
+    actual = "@raze__indexmap__1_7_0//:indexmap",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "lazy_static",
+    actual = "@raze__lazy_static__1_4_0//:lazy_static",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "libc",
+    actual = "@raze__libc__0_2_106//:libc",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "maplit",
+    actual = "@raze__maplit__1_0_2//:maplit",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "prost",
+    actual = "@raze__prost__0_8_0//:prost",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "prost_build",
+    actual = "@raze__prost_build__0_8_0//:prost_build",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "regex",
+    actual = "@raze__regex__1_5_4//:regex",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "reqwest",
+    actual = "@raze__reqwest__0_11_6//:reqwest",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "tokio",
+    actual = "@raze__tokio__1_13_0//:tokio",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
+
+alias(
+    name = "ux",
+    actual = "@raze__ux__0_1_3//:ux",
+    tags = [
+        "cargo-raze",
+        "manual",
+    ],
+)
