@@ -12,18 +12,7 @@ require "rubygems/package"
 RSpec::Core::RakeTask.new(:spec)
 
 LIB_GITHUB_RELEASES = {
-  "0.2.0" => [
-    {
-      file: "libddprof-x86_64-alpine-linux-musl.tar.gz",
-      sha256: "d519a6241d78260522624b8e79e98502510f11d5d9551f5f80fc1134e95fa146",
-      ruby_platform: "x86_64-linux-musl"
-    },
-    {
-      file: "libddprof-x86_64-unknown-linux-gnu.tar.gz",
-      sha256: "cba0f24074d44781d7252b912faff50d330957e84a8f40a172a8138e81001f27",
-      ruby_platform: "x86_64-linux"
-    }
-  ],
+  # This should match the version in the version.rb file
   "0.3.0" => [
     {
       file: "libddprof-x86_64-alpine-linux-musl.tar.gz",
@@ -36,7 +25,6 @@ LIB_GITHUB_RELEASES = {
       ruby_platform: "x86_64-linux"
     }
   ]
-  # Add more versions here
 }
 
 task default: [
