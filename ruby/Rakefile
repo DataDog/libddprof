@@ -82,15 +82,15 @@ task package: [
   FileUtils.mkdir_p("pkg")
 
   # Fallback package without binaries
-  Helpers.package_for(gemspec, ruby_platform: nil, included_platforms: [])
+  Helpers.package_for(gemspec, ruby_platform: nil, files: [])
 
   # We include both glibc and musl variants in the same binary gem to avoid the issues
   # documented in https://github.com/rubygems/rubygems/issues/3174
-  Helpers.package_for(gemspec, ruby_platform: "x86_64-linux", included_platforms: ["x86_64-linux", "x86_64-linux-musl"])
+  Helpers.package_for(gemspec, ruby_platform: "x86_64-linux", files: Helpers.files_for("x86_64-linux", "x86_64-linux-musl"))
 
   # Experimental macOS package, not published to rubygems.org at the moment
   if ENV["LIBDDPROF_PACKAGE_MACOS"] == "true"
-    Helpers.package_for(gemspec, ruby_platform: "x86_64-darwin", included_platforms: ["x86_64-darwin"])
+    Helpers.package_for(gemspec, ruby_platform: "x86_64-darwin", files: Helpers.files_for("x86_64-darwin"), excluded_files: [])
   end
 end
 
@@ -124,9 +124,9 @@ module Helpers
     end
   end
 
-  def self.package_for(gemspec, ruby_platform:, included_platforms:)
+  def self.package_for(gemspec, ruby_platform:, files:)
     target_gemspec = gemspec.dup
-    target_gemspec.files += files_for(included_platforms) if included_platforms.any?
+    target_gemspec.files += files
     target_gemspec.platform = ruby_platform if ruby_platform
 
     puts "Building with ruby_platform=#{ruby_platform.inspect} including: (this can take a while)"
@@ -137,10 +137,17 @@ module Helpers
     puts("-" * 80)
   end
 
-  def self.files_for(included_platforms, version: Libddprof::LIB_VERSION)
+  def self.files_for(
+    *included_platforms,
+    version: Libddprof::LIB_VERSION,
+    excluded_files: [
+      "libddprof_ffi.a", "ddprof_ffi-static.pc", # We don't use the static library
+    ]
+  )
     files = []
 
     excluded_files_from_packaging = [
+      *excluded_files,
       "DDProfConfig.cmake", # We don't compile using cmake
     ]
 
