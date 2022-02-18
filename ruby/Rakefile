@@ -2,7 +2,7 @@
 
 require "bundler/gem_tasks"
 require "rspec/core/rake_task"
-require "standard/rake" unless RUBY_VERSION < "2.5"
+require "standard/rake" unless RUBY_VERSION < "2.6"
 
 require "fileutils"
 require "http" unless RUBY_VERSION < "2.5"
@@ -41,7 +41,7 @@ LIB_GITHUB_RELEASES = {
 
 task default: [
   :spec,
-  (:'standard:fix' unless RUBY_VERSION < "2.5")
+  (:'standard:fix' unless RUBY_VERSION < "2.6")
 ].compact
 
 desc "Download lib release from github"
@@ -85,7 +85,11 @@ task extract: [:fetch] do
 end
 
 desc "Package lib downloaded releases as gems"
-task package: [:spec, :'standard:fix', :extract] do
+task package: [
+  :spec,
+  (:'standard:fix' unless RUBY_VERSION < "2.6"),
+  :extract
+] do
   gemspec = eval(File.read("libddprof.gemspec"), nil, "libddprof.gemspec") # standard:disable Security/Eval
   FileUtils.mkdir_p("pkg")
 
