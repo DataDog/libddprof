@@ -140,6 +140,10 @@ module Helpers
   def self.files_for(included_platforms, version: Libddprof::LIB_VERSION)
     files = []
 
+    excluded_files_from_packaging = [
+      "DDProfConfig.cmake", # We don't compile using cmake
+    ]
+
     each_github_release_variant(version: version) do |ruby_platform:, target_directory:, target_file:, **_|
       next unless included_platforms.include?(ruby_platform)
 
@@ -149,6 +153,7 @@ module Helpers
         Dir.glob("#{target_directory}/**/*")
           .select { |path| File.file?(path) }
           .reject { |path| path == downloaded_release_tarball }
+          .reject { |path| excluded_files_from_packaging.include?(File.basename(path)) }
     end
 
     files
