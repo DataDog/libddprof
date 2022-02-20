@@ -13,6 +13,7 @@ deliverables
 target
 tmp
 bazel-*
+third-party
 
 #==============================================================================#
 # Files to ignore
