@@ -1,22 +1,22 @@
-load("@rules_rust//rust:defs.bzl", "rust_library", "rust_shared_library", "rust_test")
+load("@rules_rust//rust:defs.bzl", "rust_shared_library", "rust_test")
+load("//third-party:crates.bzl", "all_crate_deps")
 
 package(default_visibility = ["//visibility:public"])
-deps = [
-        "//ddprof-exporter",
-        "//ddprof-ffi/cargo:chrono",
-        "//ddprof-ffi/cargo:libc",
-        "//ddprof-ffi/cargo:reqwest",
-        "//ddprof-profiles",
-    ]
 
 rust_shared_library(
     name = "ddprof-ffi",
     srcs = glob(["src/**/*.rs"]),
-    deps = deps,
+    deps = [
+        "//ddprof-exporter",
+        "//ddprof-profiles",
+    ] + all_crate_deps(),
 )
 
 rust_test(
     name = "test",
     srcs = glob(["src/**/*.rs"]),
-    deps = deps,
+    deps = [
+        "//ddprof-exporter",
+        "//ddprof-profiles",
+    ] + all_crate_deps(),
 )

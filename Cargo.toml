@@ -27,9 +27,8 @@ targets = [
     "x86_64-pc-windows-msvc",
     "x86_64-unknown-linux-gnu",
 ]
-package_aliases_dir = "."
 
-# render_package_aliases = false
+render_package_aliases = false
 default_gen_buildrs = true
 experimental_api = true
 genmode = "Remote"
