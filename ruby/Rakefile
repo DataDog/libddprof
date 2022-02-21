@@ -90,7 +90,7 @@ task package: [
 
   # Experimental macOS package, not published to rubygems.org at the moment
   if ENV["LIBDDPROF_PACKAGE_MACOS"] == "true"
-    Helpers.package_for(gemspec, ruby_platform: "x86_64-darwin", files: Helpers.files_for("x86_64-darwin"), excluded_files: [])
+    Helpers.package_for(gemspec, ruby_platform: "x86_64-darwin-19", files: Helpers.files_for("x86_64-darwin-19"))
   end
 end
 
