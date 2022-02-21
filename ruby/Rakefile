@@ -141,14 +141,14 @@ module Helpers
     *included_platforms,
     version: Libddprof::LIB_VERSION,
     excluded_files: [
-      "libddprof_ffi.a", "ddprof_ffi-static.pc", # We don't use the static library
+      "libddprof_ffi.a", "ddprof_ffi-static.pc" # We don't use the static library
     ]
   )
     files = []
 
     excluded_files_from_packaging = [
       *excluded_files,
-      "DDProfConfig.cmake", # We don't compile using cmake
+      "DDProfConfig.cmake" # We don't compile using cmake
     ]
 
     each_github_release_variant(version: version) do |ruby_platform:, target_directory:, target_file:, **_|

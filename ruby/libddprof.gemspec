@@ -34,7 +34,7 @@ Gem::Specification.new do |spec|
         (f == __FILE__) || f.match(%r{\A(?:(?:bin|test|spec|features)/|\.(?:git|travis|circleci)|appveyor)})
       end
       .reject do |f|
-        ['.rspec', '.standard.yml', 'Rakefile', 'docker-compose.yml', 'gems.rb', 'README.md'].include?(f)
+        [".rspec", ".standard.yml", "Rakefile", "docker-compose.yml", "gems.rb", "README.md"].include?(f)
       end
   end
   spec.require_paths = ["lib"]
