@@ -141,6 +141,7 @@ module Helpers
     *included_platforms,
     version: Libddprof::LIB_VERSION,
     excluded_files: [
+      "ddprof_ffi.pc", # we use the ddprof_ffi_with_rpath.pc variant
       "libddprof_ffi.a", "ddprof_ffi-static.pc" # We don't use the static library
     ]
   )
