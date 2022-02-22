@@ -13,12 +13,12 @@ module Libddprof
     File.directory?(vendor_directory) ? (Dir.entries(vendor_directory) - [".", ".."]) : []
   end
 
-  def self.pkgconfig_folder
+  def self.pkgconfig_folder(pkgconfig_file_name = "ddprof_ffi_with_rpath.pc")
     current_platform = Gem::Platform.local.to_s
 
     return unless available_binaries.include?(current_platform)
 
-    pkgconfig_file = Dir.glob("#{vendor_directory}/#{current_platform}/**/ddprof_ffi.pc").first
+    pkgconfig_file = Dir.glob("#{vendor_directory}/#{current_platform}/**/#{pkgconfig_file_name}").first
 
     return unless pkgconfig_file
 

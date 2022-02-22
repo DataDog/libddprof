@@ -79,7 +79,7 @@ RSpec.describe Libddprof do
 
         before do
           FileUtils.mkdir_p(pkgconfig_folder)
-          File.open("#{pkgconfig_folder}/ddprof_ffi.pc", "w") {}
+          File.open("#{pkgconfig_folder}/ddprof_ffi_with_rpath.pc", "w") {}
         end
 
         describe ".pkgconfig_folder" do
