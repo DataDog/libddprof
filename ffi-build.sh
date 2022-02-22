@@ -86,6 +86,10 @@ if command -v objcopy > /dev/null; then
     objcopy --remove-section .llvmbc "$destdir/lib/libddprof_ffi.a"
 fi
 
+echo "Running strip on libddprof_ffi and keeping an unstrip'd copy as libddprof_ffi_debug..."
+cp "$destdir/lib/libddprof_ffi${shared_library_suffix}" "$destdir/lib/libddprof_ffi_debug${shared_library_suffix}"
+strip -S "$destdir/lib/libddprof_ffi${shared_library_suffix}"
+
 echo "Checking that native-static-libs are as expected for this platform..."
 cd ddprof-ffi
 actual_native_static_libs="$(cargo rustc --release --target "${target}" -- --print=native-static-libs 2>&1 | awk -F ':' '/note: native-static-libs:/ { print $3 }')"
