@@ -417,13 +417,16 @@ mod test {
 
     #[test]
     fn byte_slice_to_buffer_conversion() {
-        let raw: &[u8] = b"dummy data";
+        let raw: &mut [u8] = &mut [104, 101, 108, 108, 111]; // "hello"
         let slice = Slice::new(raw.as_ptr(), raw.len());
 
         let converted: Box<Buffer> = unsafe { ddprof_ffi_Buffer_from_byte_slice(slice) };
         let converted_contents: &[u8] = unsafe { (*converted).as_slice() };
 
-        assert_eq!(b"dummy data", converted_contents);
+        raw.reverse(); // mutate the original buffer, to validate that a copy is really being made
+
+        assert_eq!(b"hello", converted_contents);
+        assert_eq!(b"olleh", raw);
         std::mem::drop(converted);
     }
 }
