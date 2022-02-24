@@ -121,13 +121,12 @@ pub unsafe extern "C" fn buffer_reset(buffer: *mut Buffer) {
     }
 }
 
-/// Used to convert "external" data (e.g. not originated in libddprof) into a libddprof buffer, for instance, when
-/// you want to attach JSON data (such as code_provenance.json or metrics.json) to a profile.
+/// Used to convert "external" data (e.g. not originated in libddprof) into a libddprof buffer, for
+/// instance, when you want to attach JSON data (such as code_provenance.json or metrics.json) to a
+/// profile.
 ///
-/// The resulting buffer should be treated by the caller as opaque data that can only be manipulated and accessed by
-/// libddprof.
-///
-/// P.s.: Remember to `ddprof_ffi_Buffer_free` whatever you got from this API after the data is reported.
+/// The resulting buffer should be treated by the caller as opaque data that can only be manipulated
+/// and accessed by libddprof.
 #[no_mangle]
 #[must_use]
 pub unsafe extern "C" fn ddprof_ffi_Buffer_from_byte_slice(buffer: ByteSlice) -> Box<Buffer> {
