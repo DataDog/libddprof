@@ -56,16 +56,15 @@ dependencies = [
 
 [[package]]
 name = "ddprof"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "ddprof-exporter",
- "ddprof-ffi",
  "ddprof-profiles",
 ]
 
 [[package]]
 name = "ddprof-exporter"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "bytes",
  "chrono",
@@ -87,7 +86,7 @@ dependencies = [
 
 [[package]]
 name = "ddprof-ffi"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "chrono",
  "ddprof-exporter",
@@ -98,7 +97,7 @@ dependencies = [
 
 [[package]]
 name = "ddprof-profiles"
-version = "0.3.0"
+version = "0.4.0-rc.1"
 dependencies = [
  "indexmap",
  "libc",
