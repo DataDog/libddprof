@@ -10,9 +10,12 @@ use hyper::header::HeaderValue;
 use hyper::Uri;
 use tokio::runtime::Runtime;
 
-mod container_id;
-mod multipart;
 mod connector;
+mod container_id;
+mod errors;
+mod multipart;
+
+pub use connector::socket_path_to_uri;
 
 const DURATION_ZERO: std::time::Duration = std::time::Duration::from_millis(0);
 const DATADOG_CONTAINER_ID_HEADER: &str = "Datadog-Container-ID";

@@ -11,6 +11,7 @@ use std::ffi::CStr;
 use std::io::Write;
 use std::os::raw::c_char;
 use std::ptr::NonNull;
+use std::str::FromStr;
 use std::time::Duration;
 
 #[repr(C)]
@@ -230,8 +231,10 @@ fn try_to_tags(tags: Slice<Tag>) -> Result<Vec<ddprof_exporter::Tag>, Box<dyn st
 }
 
 fn try_to_url(slice: ByteSlice) -> Result<hyper::Uri, Box<dyn std::error::Error>> {
-    use std::str::FromStr;
-    let str = slice.try_into()?;
+    let str: &str = slice.try_into()?;
+    if let Some(path) = str.strip_prefix("unix://") {
+        return Ok(ddprof_exporter::socket_path_to_uri(path)?);
+    }
     match hyper::Uri::from_str(str) {
         Ok(url) => Ok(url),
         Err(err) => Err(Box::new(err)),

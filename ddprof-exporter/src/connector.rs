@@ -1,9 +1,40 @@
 use std::error::Error;
 use std::future::Future;
+use std::path::PathBuf;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 use pin_project_lite::pin_project;
+
+/// Creates a new Uri, with the `unix` scheme, and the path to the socket
+/// encoded as a hex string, to prevent special characters in the url authority
+pub fn socket_path_to_uri(path: &str) -> Result<hyper::Uri, Box<dyn Error>> {
+    let path = hex::encode(path);
+    Ok(hyper::Uri::builder()
+        .scheme("unix")
+        .authority(path)
+        .path_and_query("")
+        .build()?)
+}
+
+/// Decodes
+pub fn socket_path_from_uri(
+    uri: &hyper::Uri,
+) -> Result<PathBuf, Box<dyn Error + Sync + Send + 'static>> {
+    if uri.scheme_str() != Some("unix") {
+        return Err(crate::errors::Error::InvalidUrl.into());
+    }
+    let path = String::from_utf8(
+        hex::decode(
+            uri.authority()
+                .ok_or(crate::errors::Error::InvalidUrl)?
+                .as_str(),
+        )
+        .map_err(|_| crate::errors::Error::InvalidUrl)?,
+    )
+    .map_err(|_| crate::errors::Error::InvalidUrl)?;
+    Ok(PathBuf::from(path))
+}
 
 #[derive(Clone)]
 struct UnixConnector();
@@ -23,7 +54,7 @@ impl hyper::service::Service<hyper::Uri> for UnixConnector {
 }
 
 #[derive(Clone)]
-pub struct Connector {
+pub(crate) struct Connector {
     tcp: hyper_rustls::HttpsConnector<hyper::client::HttpConnector>,
 }
 
@@ -41,7 +72,7 @@ impl Connector {
 
 pin_project! {
     #[project = ConnStreamProj]
-    pub enum ConnStream {
+    pub(crate) enum ConnStream {
         Tcp{ #[pin] transport: hyper_rustls::MaybeHttpsStream<tokio::net::TcpStream> },
         Udp{ #[pin] transport: tokio::net::UnixStream },
     }
@@ -107,8 +138,9 @@ impl hyper::service::Service<hyper::Uri> for Connector {
     fn call(&mut self, uri: hyper::Uri) -> Self::Future {
         match uri.scheme_str() {
             Some("unix") => Box::pin(async move {
+                let path = socket_path_from_uri(&uri)?;
                 Ok(ConnStream::Udp {
-                    transport: tokio::net::UnixStream::connect(uri.path()).await?,
+                    transport: tokio::net::UnixStream::connect(path).await?,
                 })
             }),
             _ => {
