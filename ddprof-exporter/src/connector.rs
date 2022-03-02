@@ -159,7 +159,42 @@ impl hyper::service::Service<hyper::Uri> for Connector {
     }
 }
 
-#[test]
-fn test_hyper_client_from_connector() {
-    let _: hyper::Client<Connector> = hyper::Client::builder().build(Connector::new());
+#[cfg(test)]
+mod tests {
+    use std::path::Path;
+
+    use super::*;
+
+    #[test]
+    /// Verify that the Connector type implements the correct bound Connect + Clone
+    /// to be able to use the hyper::Client
+    fn test_hyper_client_from_connector() {
+        let _: hyper::Client<Connector> = hyper::Client::builder().build(Connector::new());
+    }
+
+    #[test]
+    fn test_encode_unix_socket_path_absolute() {
+        let expected_path = "/path/to/a/socket.sock";
+        let uri = socket_path_to_uri(expected_path).unwrap();
+        assert_eq!(uri.scheme_str(), Some("unix"));
+
+        let actual_path = socket_path_from_uri(&uri).unwrap();
+        assert_eq!(actual_path.as_path(), Path::new(expected_path))
+    }
+
+    #[test]
+    fn test_encode_unix_socket_relative_path() {
+        let expected_path = "relative/path/to/a/socket.sock";
+        let uri = socket_path_to_uri(expected_path).unwrap();
+        let actual_path = socket_path_from_uri(&uri).unwrap();
+        assert_eq!(actual_path.as_path(), Path::new(expected_path));
+
+        let expected_path = "./relative/path/to/a/socket.sock";
+        let uri = socket_path_to_uri(expected_path).unwrap();
+        let actual_path = socket_path_from_uri(&uri).unwrap();
+        assert_eq!(actual_path.as_path(), Path::new(expected_path));
+    }
 }
+
+
+
