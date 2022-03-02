@@ -15,7 +15,8 @@ mod container_id;
 mod errors;
 mod multipart;
 
-pub use connector::socket_path_to_uri;
+#[cfg(unix)]
+pub use connector::uds::socket_path_to_uri;
 
 const DURATION_ZERO: std::time::Duration = std::time::Duration::from_millis(0);
 const DATADOG_CONTAINER_ID_HEADER: &str = "Datadog-Container-ID";
@@ -127,6 +128,16 @@ impl Endpoint {
         parts.path_and_query = p_q;
         let url = Uri::from_parts(parts)?;
         Ok(Endpoint { url, api_key: None })
+    }
+
+    /// Creates an Endpoint for talking to the Datadog agent though a unix socket.
+    ///
+    /// # Arguments
+    /// * `socket_path` - file system path to the socket
+    #[cfg(unix)]
+    pub fn agent_uds(path: &std::path::Path) -> Result<Endpoint, Box<dyn Error>> {
+        let base_url = socket_path_to_uri(path)?;
+        Self::agent(base_url)
     }
 
     /// Creates an Endpoint for talking to Datadog intake without using the agent.

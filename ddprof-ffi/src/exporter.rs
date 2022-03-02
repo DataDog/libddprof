@@ -232,8 +232,9 @@ fn try_to_tags(tags: Slice<Tag>) -> Result<Vec<ddprof_exporter::Tag>, Box<dyn st
 
 fn try_to_url(slice: ByteSlice) -> Result<hyper::Uri, Box<dyn std::error::Error>> {
     let str: &str = slice.try_into()?;
+    #[cfg(unix)]
     if let Some(path) = str.strip_prefix("unix://") {
-        return Ok(ddprof_exporter::socket_path_to_uri(path)?);
+        return Ok(ddprof_exporter::socket_path_to_uri(path.as_ref())?);
     }
     match hyper::Uri::from_str(str) {
         Ok(url) => Ok(url),

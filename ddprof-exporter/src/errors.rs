@@ -2,9 +2,11 @@ use std::error;
 use std::fmt;
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub(crate) enum Error {
     InvalidUrl,
     OperationTimedOut,
+    UnixSockeUnsuported
 }
 
 impl fmt::Display for Error {
@@ -12,6 +14,7 @@ impl fmt::Display for Error {
         f.write_str(match self {
             Self::InvalidUrl => "invalid url",
             Self::OperationTimedOut => "operation timed out",
+            Self::UnixSockeUnsuported => "unix sockets unsuported on windows"
         })
     }
 }
