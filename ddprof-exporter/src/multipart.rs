@@ -13,7 +13,39 @@ use http_body::Body as HttpBody;
 use mime_guess::Mime;
 use percent_encoding::{self, AsciiSet, NON_ALPHANUMERIC};
 
+// ==== Type adapters to remove the dependency on reqwest ====
+
 type FormResult<T> = std::result::Result<T, Box<dyn std::error::Error + Send + Sync + 'static>>;
+
+pin_project_lite::pin_project! {
+    #[derive(Debug)]
+    pub (crate) struct FormBody {
+        #[pin]
+        inner: hyper::Body
+    }
+}
+
+impl FormBody {
+    fn content_length(&self) -> Option<u64> {
+        <hyper::Body as http_body::Body>::size_hint(&self.inner).exact()
+    }
+}
+
+impl Stream for FormBody {
+    type Item = std::result::Result<Bytes, hyper::Error>;
+
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        self.project().inner.poll_data(cx)
+    }
+}
+
+impl From<hyper::Body> for FormBody {
+    fn from(inner: hyper::Body) -> Self {
+        Self { inner }
+    }
+}
+
+// ==== Original code from https://github.com/seanmonstar/reqwest/blob/master/src/async_impl/multipart.rs ====
 
 /// An async multipart/form-data request.
 pub struct Form {
@@ -43,34 +75,6 @@ pub(crate) struct PartMetadata {
 pub(crate) trait PartProps {
     fn value_len(&self) -> Option<u64>;
     fn metadata(&self) -> &PartMetadata;
-}
-
-pin_project_lite::pin_project! {
-    #[derive(Debug)]
-    pub (crate) struct FormBody {
-        #[pin]
-        inner: hyper::Body
-    }
-}
-
-impl FormBody {
-    fn content_length(&self) -> Option<u64> {
-        <hyper::Body as http_body::Body>::size_hint(&self.inner).exact()
-    }
-}
-
-impl Stream for FormBody {
-    type Item = std::result::Result<Bytes, hyper::Error>;
-
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        self.project().inner.poll_data(cx)
-    }
-}
-
-impl From<hyper::Body> for FormBody {
-    fn from(inner: hyper::Body) -> Self {
-        Self { inner }
-    }
 }
 
 // ===== impl Form =====
