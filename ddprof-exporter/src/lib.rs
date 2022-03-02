@@ -96,7 +96,9 @@ impl Request {
         client: &HttpClient,
     ) -> Result<hyper::Response<hyper::Body>, Box<dyn std::error::Error>> {
         Ok(match self.timeout {
-            Some(t) => tokio::time::timeout(t, client.request(self.req)).await?,
+            Some(t) => tokio::time::timeout(t, client.request(self.req))
+                .await
+                .map_err(|_| crate::errors::Error::OperationTimedOut)?,
             None => client.request(self.req).await,
         }?)
     }
