@@ -3,17 +3,18 @@
 
 use std::borrow::Cow;
 use std::error::Error;
+use std::io::Cursor;
 use std::str::FromStr;
 
 use bytes::Bytes;
 use hyper::header::HeaderValue;
 use hyper::Uri;
+use hyper_multipart_rfc7578::client::multipart;
 use tokio::runtime::Runtime;
 
 mod connector;
 mod container_id;
 mod errors;
-mod multipart;
 
 #[cfg(unix)]
 pub use connector::uds::socket_path_to_uri;
@@ -178,39 +179,30 @@ impl ProfileExporterV3 {
         files: &[File],
         timeout: std::time::Duration,
     ) -> Result<Request, Box<dyn Error>> {
-        let mut form = multipart::Form::new()
-            .text("version", "3")
-            .text("start", start.format("%Y-%m-%dT%H:%M:%SZ").to_string())
-            .text("end", end.format("%Y-%m-%dT%H:%M:%SZ").to_string())
-            .text("family", String::from(&self.family));
+        let mut form = multipart::Form::default();
+
+        form.add_text("version", "3");
+        form.add_text("start", start.format("%Y-%m-%dT%H:%M:%SZ").to_string());
+        form.add_text("end", end.format("%Y-%m-%dT%H:%M:%SZ").to_string());
+        form.add_text("family", String::from(&self.family));
 
         for tag in self.tags.iter() {
-            form = form.text("tags[]", format!("{}:{}", tag.name, tag.value));
+            form.add_text("tags[]", format!("{}:{}", tag.name, tag.value));
         }
 
-        form = files.iter().fold(form, |form, file| -> multipart::Form {
-            let filename = file.name.to_owned();
-            let bytes = multipart::Part::bytes(file.bytes.to_owned())
-                .file_name(filename.clone())
-                .mime_str("application/octet-stream")
-                .expect("mime to be valid");
-
-            form.part(format!("data[{}]", filename), bytes)
-        });
+        for file in files {
+            form.add_reader(
+                format!("data[{}]", file.name),
+                Cursor::new(file.bytes.to_owned()),
+            )
+        }
 
         let mut builder = hyper::Request::builder()
             .method(http::Method::POST)
             .uri(self.endpoint.url.clone())
             .header("User-Agent", concat!("DDProf/", env!("CARGO_PKG_VERSION")))
-            .header("Connection", "close")
-            .header(
-                "Content-type",
-                format!("multipart/form-data; boundary={}", form.boundary()).as_str(),
-            );
+            .header("Connection", "close");
 
-        if let Some(length) = form.compute_length() {
-            builder = builder.header("Content-Length", length);
-        }
         if let Some(api_key) = &self.endpoint.api_key {
             builder = builder.header(
                 "DD-API-KEY",
@@ -223,7 +215,7 @@ impl ProfileExporterV3 {
         }
 
         Ok(
-            Request::from(builder.body(hyper::Body::wrap_stream(form.stream()))?)
+            Request::from(form.set_body_convert::<hyper::Body, multipart::Body>(builder)?)
                 .with_timeout(timeout),
         )
     }

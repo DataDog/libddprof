@@ -73,6 +73,21 @@ dependencies = [
 ]
 
 [[package]]
+name = "common-multipart-rfc7578"
+version = "0.4.2"
+source = "git+https://github.com/paullegranddc/rust-multipart-rfc7578.git?rev=0e0812e0241601a46986c062d1c4ba8574f437a5#0e0812e0241601a46986c062d1c4ba8574f437a5"
+dependencies = [
+ "bytes",
+ "futures-core",
+ "futures-util",
+ "http",
+ "mime",
+ "mime_guess",
+ "rand",
+ "thiserror",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -109,6 +124,7 @@ dependencies = [
  "http",
  "http-body",
  "hyper",
+ "hyper-multipart-rfc7578",
  "hyper-rustls",
  "lazy_static",
  "libc",
@@ -341,6 +357,18 @@ dependencies = [
  "tower-service",
  "tracing",
  "want",
+]
+
+[[package]]
+name = "hyper-multipart-rfc7578"
+version = "0.6.2"
+source = "git+https://github.com/paullegranddc/rust-multipart-rfc7578.git?rev=0e0812e0241601a46986c062d1c4ba8574f437a5#0e0812e0241601a46986c062d1c4ba8574f437a5"
+dependencies = [
+ "bytes",
+ "common-multipart-rfc7578",
+ "futures-core",
+ "http",
+ "hyper",
 ]
 
 [[package]]
@@ -833,6 +861,26 @@ dependencies = [
  "redox_syscall",
  "remove_dir_all",
  "winapi",
+]
+
+[[package]]
+name = "thiserror"
+version = "1.0.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "854babe52e4df1653706b98fcfc05843010039b406875930a70e4d9644e5c417"
+dependencies = [
+ "thiserror-impl",
+]
+
+[[package]]
+name = "thiserror-impl"
+version = "1.0.30"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "aa32fd3f627f367fe16f893e2597ae3c05020f8bba2666a4e6ea73d377e5714b"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]
