@@ -182,8 +182,8 @@ impl ProfileExporterV3 {
         let mut form = multipart::Form::default();
 
         form.add_text("version", "3");
-        form.add_text("start", start.format("%Y-%m-%dT%H:%M:%SZ").to_string());
-        form.add_text("end", end.format("%Y-%m-%dT%H:%M:%SZ").to_string());
+        form.add_text("start", start.format("%Y-%m-%dT%H:%M:%S%.9fZ").to_string());
+        form.add_text("end", end.format("%Y-%m-%dT%H:%M:%S%.9fZ").to_string());
         form.add_text("family", String::from(&self.family));
 
         for tag in self.tags.iter() {
