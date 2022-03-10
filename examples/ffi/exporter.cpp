@@ -122,7 +122,7 @@ int main(int argc, char* argv[])
 
     ddprof_ffi_File files_[] = {{
         .name = to_byteslice("auto.pprof"),
-        .file = (ddprof_ffi_ByteSlice) {.ptr = encoded_profile->buffer.ptr, .len = encoded_profile->buffer.len},
+        .file = {.ptr = encoded_profile->buffer.ptr, .len = encoded_profile->buffer.len},
     }};
 
     ddprof_ffi_Slice_file files = {
