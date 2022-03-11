@@ -28,7 +28,7 @@ http-body = "0.4"
 pin-project-lite = "0.2.0"
 hyper-rustls = { version = "0.23", default-features = false, features = ["native-tokio", "http1", "tls12"] }
 hex = "0.4"
-hyper-multipart-rfc7578 = { git = "https://github.com/paullegranddc/rust-multipart-rfc7578.git", rev = "0e0812e0241601a46986c062d1c4ba8574f437a5" }
+hyper-multipart-rfc7578 = { git = "https://github.com/paullegranddc/rust-multipart-rfc7578.git", rev = "8dcedc266e50876c04c91d24390fe9ac44f10b96" }
 
 [dev-dependencies]
 maplit = "1.0"
