@@ -191,9 +191,10 @@ impl ProfileExporterV3 {
         }
 
         for file in files {
-            form.add_reader(
+            form.add_reader_file(
                 format!("data[{}]", file.name),
                 Cursor::new(file.bytes.to_owned()),
+                file.name,
             )
         }
 
