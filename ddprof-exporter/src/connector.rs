@@ -158,6 +158,10 @@ impl tokio::io::AsyncWrite for ConnStream {
 impl hyper::service::Service<hyper::Uri> for Connector {
     type Response = ConnStream;
     type Error = Box<dyn Error + Sync + Send>;
+
+    // This lint gets lifted in this place in a newer version, see:
+    // https://github.com/rust-lang/rust-clippy/pull/8030
+    #[allow(clippy::type_complexity)]
     type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn call(&mut self, uri: hyper::Uri) -> Self::Future {
