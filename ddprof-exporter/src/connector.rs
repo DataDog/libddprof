@@ -187,7 +187,7 @@ impl hyper::service::Service<hyper::Uri> for Connector {
     }
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
-        self.tcp.poll_ready(cx).map_err(|e| e.into())
+        self.tcp.poll_ready(cx)
     }
 }
 
