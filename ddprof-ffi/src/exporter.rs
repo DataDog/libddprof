@@ -49,7 +49,7 @@ pub unsafe extern "C" fn buffer_reset(buffer: *mut Buffer) {
 #[repr(C)]
 pub struct Tag<'a> {
     name: CharSlice<'a>,
-    value: ByteSlice<'a>,
+    value: CharSlice<'a>,
 }
 
 #[repr(C)]
