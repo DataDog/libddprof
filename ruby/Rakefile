@@ -154,15 +154,11 @@ module Helpers
     excluded_files: [
       "ddprof_ffi.pc", # we use the ddprof_ffi_with_rpath.pc variant
       "libddprof_ffi.a", "ddprof_ffi-static.pc", # We don't use the static library
-      "libddprof_ffi.so.debug" # We don't include debug info
+      "libddprof_ffi.so.debug", # We don't include debug info
+      "DDProfConfig.cmake" # We don't compile using cmake
     ]
   )
     files = []
-
-    excluded_files_from_packaging = [
-      *excluded_files,
-      "DDProfConfig.cmake" # We don't compile using cmake
-    ]
 
     each_github_release_variant(version: version) do |ruby_platform:, target_directory:, target_file:, **_|
       next unless included_platforms.include?(ruby_platform)
@@ -173,7 +169,7 @@ module Helpers
         Dir.glob("#{target_directory}/**/*")
           .select { |path| File.file?(path) }
           .reject { |path| path == downloaded_release_tarball }
-          .reject { |path| excluded_files_from_packaging.include?(File.basename(path)) }
+          .reject { |path| excluded_files.include?(File.basename(path)) }
     end
 
     files
