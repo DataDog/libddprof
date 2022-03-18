@@ -114,6 +114,7 @@ task push_to_rubygems: [
 
   system("gem push pkg/libddprof-#{Libddprof::VERSION}.gem")
   system("gem push pkg/libddprof-#{Libddprof::VERSION}-x86_64-linux.gem")
+  system("gem push pkg/libddprof-#{Libddprof::VERSION}-aarch64-linux.gem")
 
   system("gem signout") # leave no credentials behind
 end
