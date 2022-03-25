@@ -91,8 +91,13 @@ task package: [
   gemspec = eval(File.read("libddprof.gemspec"), nil, "libddprof.gemspec") # standard:disable Security/Eval
   FileUtils.mkdir_p("pkg")
 
-  # Fallback package without binaries
-  Helpers.package_for(gemspec, ruby_platform: nil, files: [])
+  # Fallback package with all binaries
+  # This package will get used by (1) platforms that have no matching `ruby_platform` or (2) that have set
+  # "BUNDLE_FORCE_RUBY_PLATFORM" (or its equivalent via code) to avoid precompiled gems.
+  # In a previous version of libddprof, this package had no binaries, but that could mean that we broke customers in case (2).
+  # For customers in case (1), this package is a no-op, and dd-trace-rb will correctly detect and warn that
+  # there are no valid binaries for the platform.
+  Helpers.package_for(gemspec, ruby_platform: nil, files: Helpers.files_for("x86_64-linux", "x86_64-linux-musl", "aarch64-linux", "aarch64-linux-musl"))
 
   # We include both glibc and musl variants in the same binary gem to avoid the issues
   # documented in https://github.com/rubygems/rubygems/issues/3174

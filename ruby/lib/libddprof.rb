@@ -3,11 +3,6 @@
 require_relative "libddprof/version"
 
 module Libddprof
-  # Does this libddprof release include any binaries?
-  def self.binaries?
-    available_binaries.any?
-  end
-
   # This should only be used for debugging/logging
   def self.available_binaries
     File.directory?(vendor_directory) ? (Dir.entries(vendor_directory) - [".", ".."]) : []
