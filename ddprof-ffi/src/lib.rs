@@ -13,6 +13,9 @@ use libc::size_t;
 
 mod exporter;
 mod profiles;
+mod vec;
+
+pub use vec::*;
 
 /// Represents time since the Unix Epoch in seconds plus nanoseconds.
 #[repr(C)]
@@ -40,59 +43,6 @@ impl TryFrom<SystemTime> for Timespec {
             seconds,
             nanoseconds,
         })
-    }
-}
-
-/// Buffer holds the raw parts of a Rust Vec; it should only be created from
-/// Rust, never from C.
-#[repr(C)]
-pub struct Buffer {
-    ptr: *const u8,
-    len: size_t,
-    capacity: size_t,
-}
-
-impl Buffer {
-    pub fn from_vec(vec: Vec<u8>) -> Self {
-        let buffer = Self {
-            ptr: vec.as_ptr(),
-            len: vec.len(),
-            capacity: vec.capacity(),
-        };
-        std::mem::forget(vec);
-        buffer
-    }
-
-    /// # Safety
-    /// This operation is only safe if the buffer was created from using one of
-    /// the associated methods on `Buffer`.
-    pub unsafe fn as_slice(&self) -> &[u8] {
-        std::slice::from_raw_parts(self.ptr, self.len)
-    }
-
-    /// # Safety
-    /// This operation is only safe if the buffer was created from using one of
-    /// the associated methods on `Buffer`.
-    pub unsafe fn into_vec(self) -> Vec<u8> {
-        let ptr = self.ptr as *mut u8;
-        let vec = Vec::from_raw_parts(ptr, self.len, self.capacity);
-        std::mem::forget(self);
-        vec
-    }
-
-    /// # Safety
-    /// This operation is only safe if the buffer was created from using one of
-    /// the associated methods on `Buffer`.
-    pub unsafe fn reset(&mut self) {
-        *self = Self::from_vec(Vec::new());
-    }
-}
-
-impl Drop for Buffer {
-    fn drop(&mut self) {
-        let vec: Vec<u8> =
-            unsafe { Vec::from_raw_parts(self.ptr as *mut u8, self.len, self.capacity) };
-        std::mem::drop(vec)
     }
 }
 
@@ -172,8 +122,8 @@ impl<'a, T> From<&'a [T]> for Slice<'a, T> {
     }
 }
 
-impl<'a, T> From<&Vec<T>> for Slice<'a, T> {
-    fn from(value: &Vec<T>) -> Self {
+impl<'a, T> From<&std::vec::Vec<T>> for Slice<'a, T> {
+    fn from(value: &std::vec::Vec<T>) -> Self {
         let ptr = value.as_ptr();
         let len = value.len();
         Slice::new(ptr, len)

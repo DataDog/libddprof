@@ -1,7 +1,7 @@
 // Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021-Present Datadog, Inc.
 
-use crate::{Buffer, CharSlice, Slice, Timespec};
+use crate::{CharSlice, Slice, Timespec};
 use ddprof_profiles as profiles;
 use std::convert::{TryFrom, TryInto};
 use std::str::Utf8Error;
@@ -326,7 +326,7 @@ pub extern "C" fn ddprof_ffi_Profile_add(
 pub struct EncodedProfile {
     start: Timespec,
     end: Timespec,
-    buffer: Buffer,
+    buffer: crate::Vec<u8>,
 }
 
 impl TryFrom<ddprof_profiles::EncodedProfile> for EncodedProfile {
@@ -335,7 +335,7 @@ impl TryFrom<ddprof_profiles::EncodedProfile> for EncodedProfile {
     fn try_from(value: ddprof_profiles::EncodedProfile) -> Result<Self, Self::Error> {
         let start = value.start.try_into()?;
         let end = value.end.try_into()?;
-        let buffer = Buffer::from_vec(value.buffer);
+        let buffer = value.buffer.into();
         Ok(Self { start, end, buffer })
     }
 }
@@ -377,14 +377,6 @@ pub extern "C" fn ddprof_ffi_Profile_serialize(
 #[no_mangle]
 pub extern "C" fn ddprof_ffi_Profile_reset(profile: &mut ddprof_profiles::Profile) -> bool {
     profile.reset().is_some()
-}
-
-#[no_mangle]
-/// # Safety
-/// Only pass buffers which were created by ddprof routines; do not create one
-/// in C and then pass it in. Only call this once per buffer.
-pub unsafe extern "C" fn ddprof_ffi_Buffer_free(buffer: Box<Buffer>) {
-    std::mem::drop(buffer)
 }
 
 #[cfg(test)]
