@@ -17,9 +17,6 @@ struct Deleter {
   void operator()(ddprof_ffi_ProfileExporterV3 *object) {
     ddprof_ffi_ProfileExporterV3_delete(object);
   }
-  void operator()(ddprof_ffi_EncodedProfile *object) {
-    ddprof_ffi_EncodedProfile_delete(object);
-  }
 };
 
 template <typename T> class Holder {
@@ -53,8 +50,8 @@ int main(int argc, char *argv[]) {
   const auto service = argv[1];
 
   const ddprof_ffi_ValueType wall_time = {
-      .type_ = to_slice_c_char("wall-time"),
-      .unit = to_slice_c_char("nanoseconds"),
+      .type_ = DDPROF_FFI_CHARSLICE_C("wall-time"),
+      .unit = DDPROF_FFI_CHARSLICE_C("nanoseconds"),
   };
 
   const ddprof_ffi_Slice_value_type sample_types = {&wall_time, 1};
@@ -63,8 +60,11 @@ int main(int argc, char *argv[]) {
       ddprof_ffi_Profile_new(sample_types, &period)};
 
   ddprof_ffi_Line root_line = {
-      .function = {.name = to_slice_c_char("{main}"),
-                   .filename = to_slice_c_char("/srv/example/index.php")},
+      .function =
+          {
+              .name = DDPROF_FFI_CHARSLICE_C("{main}"),
+              .filename = DDPROF_FFI_CHARSLICE_C("/srv/example/index.php"),
+          },
       .line = 0,
   };
 
@@ -76,8 +76,8 @@ int main(int argc, char *argv[]) {
 
   int64_t value = 10;
   const ddprof_ffi_Label label = {
-      .key = to_slice_c_char("language"),
-      .str = to_slice_c_char("php"),
+      .key = DDPROF_FFI_CHARSLICE_C("language"),
+      .str = DDPROF_FFI_CHARSLICE_C("php"),
   };
   ddprof_ffi_Sample sample = {
       .locations = {&root_location, 1},
@@ -86,8 +86,14 @@ int main(int argc, char *argv[]) {
   };
   ddprof_ffi_Profile_add(profile, sample);
 
-  Holder<ddprof_ffi_EncodedProfile> encoded_profile{
-      ddprof_ffi_Profile_serialize(profile)};
+  ddprof_ffi_SerializeResult serialize_result =
+      ddprof_ffi_Profile_serialize(profile);
+  if (serialize_result.tag == DDPROF_FFI_SERIALIZE_RESULT_ERR) {
+    print_error("Failed to serialize profile: ", serialize_result.err);
+    return 1;
+  }
+
+  ddprof_ffi_EncodedProfile *encoded_profile = &serialize_result.ok;
 
   ddprof_ffi_EndpointV3 endpoint = ddprof_ffi_EndpointV3_agentless(
       DDPROF_FFI_CHARSLICE_C("datad0g.com"), to_slice_c_char(api_key));
@@ -113,8 +119,7 @@ int main(int argc, char *argv[]) {
 
   ddprof_ffi_File files_[] = {{
       .name = DDPROF_FFI_CHARSLICE_C("auto.pprof"),
-      .file = {.ptr = encoded_profile->buffer.ptr,
-               .len = encoded_profile->buffer.len},
+      .file = ddprof_ffi_Vec_u8_as_slice(&encoded_profile->buffer),
   }};
 
   ddprof_ffi_Slice_file files = {.ptr = files_,
