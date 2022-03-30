@@ -155,6 +155,7 @@ fn try_to_endpoint(
     }
 }
 
+#[must_use]
 #[export_name = "ddprof_ffi_ProfileExporterV3_new"]
 pub extern "C" fn profile_exporter_new(
     family: CharSlice,
@@ -231,6 +232,7 @@ pub unsafe extern "C" fn profile_exporter_build(
 /// # Safety
 /// If the `exporter` and `request` are non-null, then they need to have been
 /// created by apis in this module.
+#[must_use]
 #[export_name = "ddprof_ffi_ProfileExporterV3_send"]
 pub unsafe extern "C" fn profile_exporter_send(
     exporter: Option<NonNull<ProfileExporterV3>>,
@@ -267,6 +269,7 @@ pub unsafe extern "C" fn send_result_drop(result: SendResult) {
     std::mem::drop(result)
 }
 
+#[must_use]
 #[export_name = "ddprof_ffi_Vec_tag_new"]
 pub extern "C" fn vec_tag_new<'a>() -> crate::Vec<Tag<'a>> {
     crate::Vec::default()
@@ -367,6 +370,7 @@ pub extern "C" fn vec_tag_result_drop(result: VecTagResult) {
     std::mem::drop(result)
 }
 
+#[must_use]
 #[export_name = "ddprof_ffi_Vec_tag_parse"]
 pub extern "C" fn vec_tag_parse(string: CharSlice) -> VecTagResult {
     match string.try_into() {
@@ -379,6 +383,7 @@ pub extern "C" fn vec_tag_parse(string: CharSlice) -> VecTagResult {
     }
 }
 
+#[must_use]
 #[allow(clippy::ptr_arg)]
 #[export_name = "ddprof_ffi_Vec_tag_clone"]
 pub extern "C" fn vec_tag_clone<'a>(vec: &'a crate::Vec<Tag<'a>>) -> VecTagResult {
