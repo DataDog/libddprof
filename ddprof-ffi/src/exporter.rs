@@ -311,7 +311,9 @@ fn parse_tag_chunk(chunk: &str) -> Result<Tag, TagsError> {
             return Err(TagsError {
                 message: format!("tag cannot start with a colon: \"{}\"", chunk),
             });
-        } else if first_colon_position == chunk.chars().count() {
+        }
+
+        if chunk.ends_with(':') {
             return Err(TagsError {
                 message: format!("tag cannot end with a colon: \"{}\"", chunk),
             });
@@ -494,6 +496,7 @@ mod test {
                     Tag::new("key3", "value3"),
                 ],
             ),
+            ("key1:", vec![]),
         ];
 
         for case in cases {
