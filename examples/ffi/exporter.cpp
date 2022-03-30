@@ -120,8 +120,7 @@ int main(int argc, char *argv[]) {
   ddprof_ffi_Slice_file files = {.ptr = files_,
                                  .len = sizeof files_ / sizeof *files_};
 
-  ddprof_ffi_Tag additional_tag{}; // Only needed for address
-  ddprof_ffi_Slice_tag additional_tags = {.ptr = &additional_tag, .len = 0};
+  ddprof_ffi_Slice_tag additional_tags = {.ptr = nullptr, .len = 0};
 
   ddprof_ffi_Request *request = ddprof_ffi_ProfileExporterV3_build(
       exporter, encoded_profile->start, encoded_profile->end, files,
