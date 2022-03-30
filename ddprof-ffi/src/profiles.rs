@@ -365,6 +365,7 @@ pub unsafe extern "C" fn ddprof_ffi_SerializeResult_drop(result: SerializeResult
     std::mem::drop(result)
 }
 
+#[must_use]
 #[no_mangle]
 pub unsafe extern "C" fn ddprof_ffi_Vec_u8_as_slice(vec: &crate::Vec<u8>) -> Slice<u8> {
     vec.as_slice()
