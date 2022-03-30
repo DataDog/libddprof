@@ -5,6 +5,7 @@ extern "C" {
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <memory>
 
 static ddprof_ffi_Slice_c_char to_slice_c_char(const char *s) {
   return (ddprof_ffi_Slice_c_char){.ptr = s, .len = strlen(s)};
@@ -14,22 +15,6 @@ struct Deleter {
   void operator()(ddprof_ffi_Profile *object) {
     ddprof_ffi_Profile_free(object);
   }
-  void operator()(ddprof_ffi_ProfileExporterV3 *object) {
-    ddprof_ffi_ProfileExporterV3_delete(object);
-  }
-};
-
-template <typename T> class Holder {
-public:
-  explicit Holder(T *object) : _object(object) {}
-  ~Holder() { Deleter{}(_object); }
-  Holder(const Holder &) = delete;
-  Holder &operator=(const Holder &) = delete;
-
-  operator T *() { return _object; }
-  T *operator->() { return _object; }
-
-  T *_object;
 };
 
 template <typename T> void print_error(const char *s, const T &err) {
@@ -56,7 +41,7 @@ int main(int argc, char *argv[]) {
 
   const ddprof_ffi_Slice_value_type sample_types = {&wall_time, 1};
   const ddprof_ffi_Period period = {wall_time, 60};
-  Holder<ddprof_ffi_Profile> profile{
+  std::unique_ptr<ddprof_ffi_Profile, Deleter> profile{
       ddprof_ffi_Profile_new(sample_types, &period)};
 
   ddprof_ffi_Line root_line = {
@@ -84,10 +69,10 @@ int main(int argc, char *argv[]) {
       .values = {&value, 1},
       .labels = {&label, 1},
   };
-  ddprof_ffi_Profile_add(profile, sample);
+  ddprof_ffi_Profile_add(profile.get(), sample);
 
   ddprof_ffi_SerializeResult serialize_result =
-      ddprof_ffi_Profile_serialize(profile);
+      ddprof_ffi_Profile_serialize(profile.get());
   if (serialize_result.tag == DDPROF_FFI_SERIALIZE_RESULT_ERR) {
     print_error("Failed to serialize profile: ", serialize_result.err);
     return 1;
@@ -112,10 +97,11 @@ int main(int argc, char *argv[]) {
   if (exporter_new_result.tag ==
       DDPROF_FFI_NEW_PROFILE_EXPORTER_V3_RESULT_ERR) {
     print_error("Failed to create exporter: ", exporter_new_result.err);
+    ddprof_ffi_NewProfileExporterV3Result_drop(exporter_new_result);
     return 1;
   }
 
-  Holder<ddprof_ffi_ProfileExporterV3> exporter{exporter_new_result.ok};
+  auto exporter = exporter_new_result.ok;
 
   ddprof_ffi_File files_[] = {{
       .name = DDPROF_FFI_CHARSLICE_C("auto.pprof"),
@@ -131,12 +117,17 @@ int main(int argc, char *argv[]) {
       exporter, encoded_profile->start, encoded_profile->end, files,
       additional_tags, 10000);
 
+  int exit_code = 0;
   ddprof_ffi_SendResult send_result =
       ddprof_ffi_ProfileExporterV3_send(exporter, request);
   if (send_result.tag == DDPROF_FFI_SEND_RESULT_FAILURE) {
     print_error("Failed to send profile: ", send_result.failure);
-    return 1;
+    exit_code = 1;
   } else {
     printf("Response code: %d\n", send_result.http_response.code);
   }
+
+  ddprof_ffi_NewProfileExporterV3Result_drop(exporter_new_result);
+  ddprof_ffi_SendResult_drop(send_result);
+  return exit_code;
 }
