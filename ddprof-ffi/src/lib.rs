@@ -2,6 +2,7 @@
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021-Present Datadog, Inc.
 
 use std::convert::{TryFrom, TryInto};
+use std::fmt::{Debug, Formatter};
 use std::marker::PhantomData;
 use std::ops::Sub;
 use std::os::raw::c_char;
@@ -54,6 +55,29 @@ pub struct Slice<'a, T> {
     phantom: PhantomData<&'a [T]>,
 }
 
+impl<'a, T> IntoIterator for Slice<'a, T> {
+    type Item = &'a T;
+    type IntoIter = std::slice::Iter<'a, T>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.into_slice().iter()
+    }
+}
+
+impl<'a, T: Debug> Debug for Slice<'a, T> {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        f.debug_list().entries(self.as_slice().iter()).finish()
+    }
+}
+
+impl<'a, T: Eq> PartialEq<Self> for Slice<'a, T> {
+    fn eq(&self, other: &Self) -> bool {
+        return self.as_slice() == other.as_slice();
+    }
+}
+
+impl<'a, T: Eq> Eq for Slice<'a, T> {}
+
 // Use to represent strings -- should be valid UTF-8.
 type CharSlice<'a> = crate::Slice<'a, c_char>;
 
@@ -74,14 +98,21 @@ impl<'a, T> Slice<'a, T> {
         }
     }
 
-    /// # Safety
-    /// The Slice's ptr must point to contiguous storage of at least `self.len`
-    /// elements. If it is not suitably aligned, then it will return an empty slice.
-    pub unsafe fn into_slice(self) -> &'a [T] {
+    pub fn as_slice(&'a self) -> &'a [T] {
         if self.is_empty() {
             return &[];
         }
-        std::slice::from_raw_parts(self.ptr, self.len)
+        unsafe { std::slice::from_raw_parts(self.ptr, self.len) }
+    }
+
+    /// # Safety
+    /// The Slice's ptr must point to contiguous storage of at least `self.len`
+    /// elements. If it is not suitably aligned, then it will return an empty slice.
+    pub fn into_slice(self) -> &'a [T] {
+        if self.is_empty() {
+            return &[];
+        }
+        unsafe { std::slice::from_raw_parts(self.ptr, self.len) }
     }
 
     pub fn len(&self) -> usize {
@@ -93,7 +124,7 @@ impl<'a, T> Slice<'a, T> {
     }
 
     pub fn is_empty(&self) -> bool {
-        self.len == 0 || !is_aligned_and_not_null(self.ptr)
+        self.len() == 0
     }
 }
 
@@ -146,7 +177,7 @@ impl<'a> TryFrom<Slice<'a, u8>> for &'a str {
     type Error = Utf8Error;
 
     fn try_from(value: Slice<'a, u8>) -> Result<Self, Self::Error> {
-        let slice = unsafe { value.into_slice() };
+        let slice = value.into_slice();
         std::str::from_utf8(slice)
     }
 }

@@ -222,7 +222,7 @@ impl<'a> TryFrom<Location<'a>> for profiles::api::Location<'a> {
     fn try_from(location: Location<'a>) -> Result<Self, Self::Error> {
         let mapping: profiles::api::Mapping = location.mapping.try_into()?;
         let mut lines: Vec<profiles::api::Line> = Vec::new();
-        for &line in unsafe { location.lines.into_slice() }.iter() {
+        for &line in location.lines.into_iter() {
             lines.push(line.try_into()?);
         }
         Ok(Self {
@@ -256,14 +256,14 @@ impl<'a> TryFrom<Sample<'a>> for profiles::api::Sample<'a> {
 
     fn try_from(sample: Sample<'a>) -> Result<Self, Self::Error> {
         let mut locations: Vec<profiles::api::Location> = Vec::with_capacity(sample.locations.len);
-        for &location in unsafe { sample.locations.into_slice() }.iter() {
+        for &location in sample.locations.into_iter() {
             locations.push(location.try_into()?)
         }
 
-        let values: Vec<i64> = unsafe { sample.values.into_slice() }.to_vec();
+        let values: Vec<i64> = sample.values.into_slice().to_vec();
 
         let mut labels: Vec<profiles::api::Label> = Vec::with_capacity(sample.labels.len);
-        for &label in unsafe { sample.labels.into_slice() }.iter() {
+        for &label in sample.labels.into_iter() {
             labels.push(label.try_into()?);
         }
 

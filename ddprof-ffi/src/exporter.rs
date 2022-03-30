@@ -40,10 +40,19 @@ pub unsafe extern "C" fn new_profile_exporter_v3_result_dtor(result: NewProfileE
 }
 
 #[repr(C)]
-#[derive(Copy, Clone)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Tag<'a> {
     name: CharSlice<'a>,
     value: CharSlice<'a>,
+}
+
+impl<'a> Tag<'a> {
+    fn new(key: &'a str, value: &'a str) -> Tag<'a> {
+        Tag {
+            name: CharSlice::from(key),
+            value: CharSlice::from(value),
+        }
+    }
 }
 
 #[repr(C)]
@@ -86,31 +95,35 @@ pub extern "C" fn endpoint_agentless<'a>(
     EndpointV3::Agentless(site, api_key)
 }
 
-struct EmptyTagError {}
+struct TagsError {
+    message: String,
+}
 
-impl std::fmt::Display for EmptyTagError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "A tag name must not be empty.")
+impl Debug for TagsError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Tag Error: {:?}.", self.message)
     }
 }
 
-impl std::fmt::Debug for EmptyTagError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "A tag name must not be empty.")
+impl Display for TagsError {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "Tag Error: {}.", self.message)
     }
 }
 
-impl std::error::Error for EmptyTagError {}
+impl Error for TagsError {}
 
 fn try_to_tags(tags: Slice<Tag>) -> Result<Vec<ddprof_exporter::Tag>, Box<dyn std::error::Error>> {
     let mut converted_tags = Vec::with_capacity(tags.len);
-    for tag in unsafe { tags.into_slice() }.iter() {
+    for tag in tags.into_slice().iter() {
         let name: &str = tag.name.try_into()?;
         let value: &str = tag.value.try_into()?;
 
         // If a tag name is empty, that's an error
         if name.is_empty() {
-            return Err(Box::new(EmptyTagError {}));
+            return Err(Box::new(TagsError {
+                message: "tag name must not be empty".to_string(),
+            }));
         }
 
         /* However, empty tag values are treated as if the tag was not sent;
@@ -292,41 +305,22 @@ pub extern "C" fn vec_tag_drop(vec: crate::Vec<Tag>) {
     std::mem::drop(vec)
 }
 
-struct ParseTagsError {
-    message: &'static str,
-}
-
-impl Debug for ParseTagsError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Tag Error: {}", self.message)
-    }
-}
-
-impl Display for ParseTagsError {
-    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-        write!(f, "The tags string was malformed.")
-    }
-}
-
-impl Error for ParseTagsError {}
-
-fn parse_tag_chunk(chunk: &str) -> Result<Tag, ParseTagsError> {
+fn parse_tag_chunk(chunk: &str) -> Result<Tag, TagsError> {
     if let Some(first_colon_position) = chunk.find(':') {
         if first_colon_position == 0 {
-            return Err(ParseTagsError {
-                message: "Tag cannot start with a colon.",
+            return Err(TagsError {
+                message: format!("tag cannot start with a colon: \"{}\"", chunk),
+            });
+        } else if first_colon_position == chunk.chars().count() {
+            return Err(TagsError {
+                message: format!("tag cannot end with a colon: \"{}\"", chunk),
             });
         }
         let name = &chunk[..first_colon_position];
         let value = &chunk[(first_colon_position + 1)..];
-        Ok(Tag {
-            name: CharSlice::from(name),
-            value: CharSlice::from(value),
-        })
+        Ok(Tag::new(name, value))
     } else {
-        Err(ParseTagsError {
-            message: "Unable to find a colon in the tag.",
-        })
+        Ok(Tag::new(chunk, ""))
     }
 }
 
@@ -335,28 +329,12 @@ fn parse_tag_chunk(chunk: &str) -> Result<Tag, ParseTagsError> {
 ///     "key1:value1,key2:value2"
 ///     "key1:value1 key2:value2"
 /// Tag names and values are required and may not be empty.
-fn parse_tags(str: &str) -> Result<crate::Vec<Tag>, ParseTagsError> {
-    /* The choice between spaces and comma as the separator is made by splitting
-     * by both and seeing which way matches the number of colons in the string.
-     *
-     * This is also done in a way to avoid allocations.
-     */
-    let colon_count = str.matches(':').count();
-    let comma_separated = str.split(',').map(parse_tag_chunk).filter(Result::is_ok);
-    let space_separated = str.split(' ').map(parse_tag_chunk).filter(Result::is_ok);
-
-    let seq = if comma_separated.clone().count() == colon_count {
-        comma_separated
-    } else if space_separated.clone().count() == colon_count {
-        space_separated
-    } else {
-        return Err(ParseTagsError {
-            message: "Unable to identify the tag separator; is the tags string malformed?",
-        });
-    };
-
-    let vec: Vec<_> = seq.flat_map(Result::ok).collect();
-    Ok(crate::Vec::from(vec))
+fn parse_tags(str: &str) -> Result<crate::Vec<Tag>, TagsError> {
+    let vec: Vec<_> = str
+        .split(&[',', ' '][..])
+        .flat_map(parse_tag_chunk)
+        .collect();
+    Ok(vec.into())
 }
 
 #[repr(C)]
@@ -494,5 +472,34 @@ mod test {
         //     we have no coverage for the request actually being correct.
         //     It'd be nice to actually perform the request, capture its contents, and assert that
         //     they are as expected.
+    }
+
+    #[test]
+    fn test_parse_tags() {
+        // See the docs for what we convey to users about tags:
+        // https://docs.datadoghq.com/getting_started/tagging/
+
+        let cases = [
+            ("env:staging:east", vec![Tag::new("env", "staging:east")]),
+            ("value", vec![Tag::new("value", "")]),
+            (
+                "state:utah,state:idaho",
+                vec![Tag::new("state", "utah"), Tag::new("state", "idaho")],
+            ),
+            (
+                "key1:value1 key2:value2 key3:value3",
+                vec![
+                    Tag::new("key1", "value1"),
+                    Tag::new("key2", "value2"),
+                    Tag::new("key3", "value3"),
+                ],
+            ),
+        ];
+
+        for case in cases {
+            let expected = case.1;
+            let actual = parse_tags(case.0).unwrap();
+            assert_eq!(expected, std::vec::Vec::from(actual));
+        }
     }
 }

@@ -63,7 +63,7 @@ impl<'a, T> IntoIterator for &'a Vec<T> {
     type IntoIter = core::slice::Iter<'a, T>;
 
     fn into_iter(self) -> Self::IntoIter {
-        unsafe { self.as_slice().into_slice() }.iter()
+        self.as_slice().into_slice().iter()
     }
 }
 
