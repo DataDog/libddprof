@@ -21,8 +21,8 @@ pub enum SendResult {
 }
 
 #[repr(C)]
-pub enum NewProfileExporterV3Result {
-    Ok(*mut ProfileExporterV3),
+pub enum NewProfileExporterV3Result<'a> {
+    Ok(*mut ProfileExporterV3<'a>),
     Err(crate::Vec<u8>),
 }
 
@@ -113,7 +113,9 @@ impl Display for TagsError {
 
 impl Error for TagsError {}
 
-fn try_to_tags(tags: Slice<Tag>) -> Result<Vec<ddprof_exporter::Tag>, Box<dyn std::error::Error>> {
+fn try_to_tags<'a>(
+    tags: Slice<Tag<'a>>,
+) -> Result<Vec<ddprof_exporter::Tag<'a>>, Box<dyn std::error::Error>> {
     let mut converted_tags = Vec::with_capacity(tags.len);
     for tag in tags.into_slice().iter() {
         let name: &str = tag.name.try_into()?;
@@ -163,19 +165,19 @@ fn try_to_endpoint(
         EndpointV3::Agentless(site, api_key) => {
             let site_str: &str = site.try_into()?;
             let api_key_str: &str = api_key.try_into()?;
-            ddprof_exporter::Endpoint::agentless(site_str, api_key_str)
+            ddprof_exporter::Endpoint::agentless(Cow::from(site_str), Cow::from(api_key_str))
         }
     }
 }
 
 #[must_use]
 #[export_name = "ddprof_ffi_ProfileExporterV3_new"]
-pub extern "C" fn profile_exporter_new(
-    family: CharSlice,
-    tags: Slice<Tag>,
-    endpoint: EndpointV3,
-) -> NewProfileExporterV3Result {
-    match || -> Result<ProfileExporterV3, Box<dyn std::error::Error>> {
+pub extern "C" fn profile_exporter_new<'a>(
+    family: CharSlice<'a>,
+    tags: Slice<Tag<'a>>,
+    endpoint: EndpointV3<'a>,
+) -> NewProfileExporterV3Result<'a> {
+    match || -> Result<ProfileExporterV3<'a>, Box<dyn Error>> {
         let converted_family: &str = family.try_into()?;
         let converted_tags = try_to_tags(tags)?;
         let converted_endpoint = try_to_endpoint(endpoint)?;

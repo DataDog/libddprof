@@ -41,15 +41,15 @@ fn multipart(exporter: &ProfileExporterV3) -> Request {
     request
 }
 
-fn default_tags() -> Vec<Tag> {
+fn default_tags<'a>() -> Vec<Tag<'a>> {
     vec![
         Tag {
-            name: Cow::Borrowed("service"),
-            value: Cow::Borrowed("php"),
+            name: Cow::from("service"),
+            value: Cow::from("php"),
         },
         Tag {
-            name: Cow::Borrowed("host"),
-            value: Cow::Borrowed("bits"),
+            name: Cow::from("host"),
+            value: Cow::from("bits"),
         },
     ]
 }
@@ -75,7 +75,8 @@ fn multipart_agent() {
 #[test]
 fn multipart_agentless() {
     let api_key = "1234567890123456789012";
-    let endpoint = Endpoint::agentless("datadoghq.com", api_key).expect("endpoint to construct");
+    let endpoint = Endpoint::agentless(Cow::from("datadoghq.com"), Cow::from(api_key))
+        .expect("endpoint to construct");
     let exporter =
         ProfileExporterV3::new("php", default_tags(), endpoint).expect("exporter to construct");
 

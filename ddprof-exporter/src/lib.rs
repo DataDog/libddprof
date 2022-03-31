@@ -30,9 +30,9 @@ pub struct Exporter {
     runtime: Runtime,
 }
 
-pub struct Tag {
-    pub name: Cow<'static, str>,
-    pub value: Cow<'static, str>,
+pub struct Tag<'a> {
+    pub name: Cow<'a, str>,
+    pub value: Cow<'a, str>,
 }
 
 pub struct FieldsV3 {
@@ -40,16 +40,16 @@ pub struct FieldsV3 {
     pub end: DateTime<Utc>,
 }
 
-pub struct Endpoint {
+pub struct Endpoint<'a> {
     url: Uri,
-    api_key: Option<String>,
+    api_key: Option<Cow<'a, str>>,
 }
 
-pub struct ProfileExporterV3 {
+pub struct ProfileExporterV3<'a> {
     exporter: Exporter,
-    endpoint: Endpoint,
-    family: String,
-    tags: Vec<Tag>,
+    endpoint: Endpoint<'a>,
+    family: Cow<'a, str>,
+    tags: Vec<Tag<'a>>,
 }
 
 pub struct Request {
@@ -103,12 +103,12 @@ pub struct File<'a> {
     pub bytes: &'a [u8],
 }
 
-impl Endpoint {
+impl<'a> Endpoint<'a> {
     /// Creates an Endpoint for talking to the Datadog agent.
     ///
     /// # Arguments
     /// * `base_url` - has protocol, host, and port e.g. http://localhost:8126/
-    pub fn agent(base_url: Uri) -> Result<Endpoint, Box<dyn Error>> {
+    pub fn agent(base_url: Uri) -> Result<Endpoint<'a>, Box<dyn Error>> {
         let mut parts = base_url.into_parts();
         let p_q = match parts.path_and_query {
             None => None,
@@ -128,7 +128,7 @@ impl Endpoint {
     /// # Arguments
     /// * `socket_path` - file system path to the socket
     #[cfg(unix)]
-    pub fn agent_uds(path: &std::path::Path) -> Result<Endpoint, Box<dyn Error>> {
+    pub fn agent_uds(path: &std::path::Path) -> Result<Endpoint<'a>, Box<dyn Error>> {
         let base_url = socket_path_to_uri(path)?;
         Self::agent(base_url)
     }
@@ -139,26 +139,29 @@ impl Endpoint {
     /// # Arguments
     /// * `site` - e.g. "datadoghq.com".
     /// * `api_key`
-    pub fn agentless<S: AsRef<str>>(site: S, api_key: S) -> Result<Endpoint, Box<dyn Error>> {
-        let intake_url = format!("https://intake.profile.{}/v1/input", site.as_ref());
+    pub fn agentless(
+        site: Cow<'a, str>,
+        api_key: Cow<'a, str>,
+    ) -> Result<Endpoint<'a>, Box<dyn Error>> {
+        let intake_url: String = format!("https://intake.profile.{}/v1/input", site);
 
         Ok(Endpoint {
             url: Uri::from_str(intake_url.as_str())?,
-            api_key: Some(String::from(api_key.as_ref())),
+            api_key: Some(api_key),
         })
     }
 }
 
-impl ProfileExporterV3 {
-    pub fn new<S: Into<String>>(
+impl<'a> ProfileExporterV3<'a> {
+    pub fn new<S: Into<&'a str>>(
         family: S,
-        tags: Vec<Tag>,
-        endpoint: Endpoint,
-    ) -> Result<ProfileExporterV3, Box<dyn Error>> {
+        tags: Vec<Tag<'a>>,
+        endpoint: Endpoint<'a>,
+    ) -> Result<ProfileExporterV3<'a>, Box<dyn Error>> {
         Ok(Self {
             exporter: Exporter::new()?,
             endpoint,
-            family: family.into(),
+            family: Cow::from(family.into()),
             tags,
         })
     }
@@ -177,7 +180,7 @@ impl ProfileExporterV3 {
         form.add_text("version", "3");
         form.add_text("start", start.format("%Y-%m-%dT%H:%M:%S%.9fZ").to_string());
         form.add_text("end", end.format("%Y-%m-%dT%H:%M:%S%.9fZ").to_string());
-        form.add_text("family", String::from(&self.family));
+        form.add_text("family", self.family.to_owned());
 
         for tag in self.tags.iter().chain(additional_tags.iter()) {
             form.add_text("tags[]", format!("{}:{}", tag.name, tag.value));
@@ -198,10 +201,7 @@ impl ProfileExporterV3 {
             .header("Connection", "close");
 
         if let Some(api_key) = &self.endpoint.api_key {
-            builder = builder.header(
-                "DD-API-KEY",
-                HeaderValue::from_str(api_key.as_str()).expect("TODO"),
-            );
+            builder = builder.header("DD-API-KEY", HeaderValue::from_str(api_key).expect("TODO"));
         }
 
         if let Some(container_id) = container_id::get_container_id() {
