@@ -17,7 +17,12 @@ impl Debug for Tag {
 }
 
 impl Tag {
-    pub fn new<'a, 'b>(key: Cow<'a, str>, value: Cow<'b, str>) -> Result<Self, Cow<'static, str>> {
+    pub fn new<IntoCow: Into<Cow<'static, str>>>(
+        key: IntoCow,
+        value: IntoCow,
+    ) -> Result<Self, Cow<'static, str>> {
+        let key = key.into();
+        let value = value.into();
         match key.chars().next() {
             None => return Err("tag key was empty".into()),
             Some(char) => {
@@ -36,10 +41,7 @@ impl Tag {
             return Err("tag contained only whitespace or UTF8 replacement characters".into());
         }
 
-        Ok(Self {
-            key: key.to_owned().into_owned().into(),
-            value: value.to_owned().into_owned().into(),
-        })
+        Ok(Self { key, value })
     }
 
     pub fn key(&self) -> &Cow<str> {

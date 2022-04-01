@@ -44,12 +44,11 @@ fn multipart(exporter: &ProfileExporterV3) -> Request {
 mod tests {
     use crate::multipart;
     use ddprof_exporter::*;
-    use std::borrow::Cow;
 
     fn default_tags() -> Vec<Tag> {
         vec![
-            Tag::new("service".into(), "php".into()).expect("static tags to be valid"),
-            Tag::new("host".into(), "bits".into()).expect("static tags to be valid"),
+            Tag::new("service", "php").expect("static tags to be valid"),
+            Tag::new("host", "bits").expect("static tags to be valid"),
         ]
     }
 
@@ -74,8 +73,8 @@ mod tests {
     #[test]
     fn multipart_agentless() {
         let api_key = "1234567890123456789012";
-        let endpoint = Endpoint::agentless(Cow::from("datadoghq.com"), Cow::from(api_key))
-            .expect("endpoint to construct");
+        let endpoint =
+            Endpoint::agentless("datadoghq.com", api_key).expect("endpoint to construct");
         let exporter = ProfileExporterV3::new("php", Some(default_tags()), endpoint)
             .expect("exporter to construct");
 

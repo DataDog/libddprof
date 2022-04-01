@@ -119,7 +119,7 @@ pub extern "C" fn profile_exporter_new(
     endpoint: EndpointV3,
 ) -> NewProfileExporterV3Result {
     match || -> Result<ProfileExporterV3, Box<dyn Error>> {
-        let family = Cow::Owned(unsafe { family.to_utf8_lossy() }.into_owned());
+        let family = unsafe { family.to_utf8_lossy() }.into_owned();
         let converted_endpoint = unsafe { try_to_endpoint(endpoint)? };
         let tags = tags.map(|tags| tags.iter().map(|tag| tag.clone().into_owned()).collect());
         ProfileExporterV3::new(family, tags, converted_endpoint)
@@ -246,7 +246,7 @@ mod test {
     #[test]
     fn profile_exporter_v3_new_and_delete() {
         let mut tags = crate::Vec::default();
-        let host = Tag::new("host".into(), "localhost".into()).expect("static tags to be valid");
+        let host = Tag::new("host", "localhost").expect("static tags to be valid");
         tags.push(host);
 
         let result = profile_exporter_new(family(), Some(&tags), endpoint_agent(endpoint()));

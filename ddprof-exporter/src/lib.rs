@@ -137,15 +137,15 @@ impl Endpoint {
     /// # Arguments
     /// * `site` - e.g. "datadoghq.com".
     /// * `api_key`
-    pub fn agentless<S: AsRef<str>>(
-        site: S,
-        api_key: Cow<'static, str>,
+    pub fn agentless<AsStrRef: AsRef<str>, IntoCow: Into<Cow<'static, str>>>(
+        site: AsStrRef,
+        api_key: IntoCow,
     ) -> Result<Endpoint, Box<dyn Error>> {
         let intake_url: String = format!("https://intake.profile.{}/v1/input", site.as_ref());
 
         Ok(Endpoint {
             url: Uri::from_str(intake_url.as_str())?,
-            api_key: Some(api_key),
+            api_key: Some(api_key.into()),
         })
     }
 }
