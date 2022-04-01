@@ -182,7 +182,7 @@ impl ProfileExporterV3 {
 
         for tags in self.tags.as_ref().iter().chain(additional_tags.iter()) {
             for tag in tags.iter() {
-                form.add_text("tags[]", format!("{}:{}", tag.key(), tag.value()));
+                form.add_text("tags[]", tag.to_string());
             }
         }
 
