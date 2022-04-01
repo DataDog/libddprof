@@ -82,9 +82,10 @@ mod tests {
 
     #[test]
     fn test_bad_utf8() {
-        // 0b1111_0xxx is the start of a 4-byte sequence, but there aren't any more chars, so it
-        // will get converted into the utf8 replacement character. Then, we only have a space (32)
-        // and replacement chars, so it should be an error (no valid chars).
+        // 0b1111_0xxx is the start of a 4-byte sequence, but there aren't any
+        // more chars, so it  will get converted into the utf8 replacement
+        // character. This results in a string with a space (32) and a
+        // replacement char, so it should be an error (no valid chars).
         let bytes = &[32, 0b1111_0111];
         let key = String::from_utf8_lossy(bytes);
         let _ = Tag::new(key, "value".into()).expect_err("?");
