@@ -8,10 +8,12 @@ use std::str::FromStr;
 
 use bytes::Bytes;
 pub use chrono::{DateTime, Utc};
+use futures_util::FutureExt;
 use hyper::header::HeaderValue;
 pub use hyper::Uri;
 use hyper_multipart_rfc7578::client::multipart;
 use tokio::runtime::Runtime;
+use tokio_util::sync::CancellationToken;
 
 mod connector;
 mod container_id;
@@ -88,13 +90,21 @@ impl Request {
     async fn send(
         self,
         client: &HttpClient,
+        cancel: CancellationToken,
     ) -> Result<hyper::Response<hyper::Body>, Box<dyn std::error::Error>> {
-        Ok(match self.timeout {
-            Some(t) => tokio::time::timeout(t, client.request(self.req))
-                .await
-                .map_err(|_| crate::errors::Error::OperationTimedOut)?,
-            None => client.request(self.req).await,
-        }?)
+        let request = client.request(self.req).fuse();
+
+        // TODO: How to merge the two arms of match?
+        match self.timeout {
+            Some(t) => tokio::select! {
+                _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation)?,
+                result = tokio::time::timeout(t, request) => Ok((result.map_err(|_| crate::errors::Error::OperationTimedOut)?)?)
+            },
+            None => tokio::select! {
+                _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation)?,
+                result = request => Ok(result?)
+            },
+        }
     }
 }
 
@@ -214,10 +224,10 @@ impl ProfileExporterV3 {
         )
     }
 
-    pub fn send(&self, request: Request) -> Result<hyper::Response<hyper::Body>, Box<dyn Error>> {
+    pub fn send(&self, request: Request, cancel: Option<CancellationToken>) -> Result<hyper::Response<hyper::Body>, Box<dyn Error>> {
         self.exporter
             .runtime
-            .block_on(async { request.send(&self.exporter.client).await })
+            .block_on(request.send(&self.exporter.client, cancel.unwrap_or(CancellationToken::new())))
     }
 }
 
@@ -250,7 +260,7 @@ impl Exporter {
             std::mem::swap(request.headers_mut(), &mut headers);
 
             let request: Request = request.into();
-            request.with_timeout(timeout).send(&self.client).await
+            request.with_timeout(timeout).send(&self.client, CancellationToken::new()).await
         })
     }
 }

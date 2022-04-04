@@ -19,7 +19,8 @@ lazy_static = "1.4"
 libc = "0.2"
 regex = "1.5"
 hyper = { version = "0.14", features = ["http1", "client", "tcp", "stream"], default-features = false }
-tokio = { version = "1.8", features = ["rt"]}
+tokio = { version = "1.8", features = ["rt", "macros"]}
+tokio-util = "0.7.1"
 percent-encoding = "2.1"
 futures-core = { version = "0.3.0", default-features = false }
 futures-util = { version = "0.3.0", default-features = false }

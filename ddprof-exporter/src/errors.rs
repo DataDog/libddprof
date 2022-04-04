@@ -10,6 +10,7 @@ pub(crate) enum Error {
     InvalidUrl,
     OperationTimedOut,
     UnixSocketUnsupported,
+    UserRequestedCancellation,
 }
 
 impl fmt::Display for Error {
@@ -18,6 +19,7 @@ impl fmt::Display for Error {
             Self::InvalidUrl => "invalid url",
             Self::OperationTimedOut => "operation timed out",
             Self::UnixSocketUnsupported => "unix sockets unsupported on windows",
+            Self::UserRequestedCancellation => "operation cancelled by user",
         })
     }
 }
