@@ -1,0 +1,25 @@
+on: [push]
+name: Lint
+jobs:
+  rustfmt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+      - name: Cache
+        uses: ./.github/actions/cache
+      - name: Install latest nightly toolchain and rustfmt
+        run: rustup update nightly && rustup default nightly && rustup component add rustfmt
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+  clippy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sources
+        uses: actions/checkout@v2
+      - name: Cache
+        uses: ./.github/actions/cache
+      - name: Install latest nightly toolchain and clippy
+        run: rustup update nightly && rustup default nightly && rustup component add clippy
+      - name: Run cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
