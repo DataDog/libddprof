@@ -92,18 +92,16 @@ impl Request {
         client: &HttpClient,
         cancel: CancellationToken,
     ) -> Result<hyper::Response<hyper::Body>, Box<dyn std::error::Error>> {
-        let request = client.request(self.req).fuse();
-
-        // TODO: How to merge the two arms of match?
-        match self.timeout {
-            Some(t) => tokio::select! {
-                _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation)?,
-                result = tokio::time::timeout(t, request) => Ok((result.map_err(|_| crate::errors::Error::OperationTimedOut)?)?)
-            },
-            None => tokio::select! {
-                _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation)?,
-                result = request => Ok(result?)
-            },
+        tokio::select! {
+            _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation)?,
+            result = async {
+                Ok(match self.timeout {
+                    Some(t) => tokio::time::timeout(t, client.request(self.req))
+                        .await
+                        .map_err(|_| crate::errors::Error::OperationTimedOut)?,
+                    None => client.request(self.req).await,
+                }?)}
+            => result,
         }
     }
 }
