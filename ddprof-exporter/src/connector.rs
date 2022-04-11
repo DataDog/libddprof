@@ -71,10 +71,8 @@ pub(crate) mod uds {
     }
 }
 
-use futures::future::MaybeDone;
-use futures::{FutureExt, TryFutureExt};
+use futures::{future, FutureExt};
 use hyper::client::HttpConnector;
-use hyper::service::Service;
 use hyper_rustls::MaybeHttpsStream;
 use rustls::ClientConfig;
 
@@ -122,7 +120,6 @@ fn build_https_connector() -> Option<hyper_rustls::HttpsConnector<hyper::client:
 
 fn load_root_certs() -> Option<rustls::RootCertStore> {
     let mut roots = rustls::RootCertStore::empty();
-    let mut valid_count = 0;
     let mut invalid_count = 0;
 
     for cert in rustls_native_certs::load_native_certs().ok()? {
@@ -233,12 +230,17 @@ impl hyper::service::Service<hyper::Uri> for MaybeHttpsConnector {
                 }
             }),
             Some("https") => match self {
-                Self::Http(_) => todo!(), // TODO: return error
+                Self::Http(_) => future::err::<Self::Response, Self::Error>(
+                    crate::errors::Error::CannotEstablishTlsConnection.into(),
+                )
+                .boxed(),
                 Self::Https(c) => {
                     let fut = c.call(uri);
                     Box::pin(async {
                         match fut.await? {
-                            MaybeHttpsStream::Http(_) => todo!(),
+                            MaybeHttpsStream::Http(_) => {
+                                Err(crate::errors::Error::CannotEstablishTlsConnection.into())
+                            }
                             MaybeHttpsStream::Https(t) => Ok(ConnStream::Tls { transport: t }),
                         }
                     })

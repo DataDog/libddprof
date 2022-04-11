@@ -7,6 +7,7 @@ pub(crate) enum Error {
     InvalidUrl,
     OperationTimedOut,
     UnixSockeUnsuported,
+    CannotEstablishTlsConnection,
 }
 
 impl fmt::Display for Error {
@@ -15,6 +16,7 @@ impl fmt::Display for Error {
             Self::InvalidUrl => "invalid url",
             Self::OperationTimedOut => "operation timed out",
             Self::UnixSockeUnsuported => "unix sockets unsuported on windows",
+            Self::CannotEstablishTlsConnection => "cannot establish requested secure TLS connection",
         })
     }
 }
