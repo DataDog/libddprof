@@ -45,7 +45,7 @@ impl Tag {
             .find(|char| *char != std::char::REPLACEMENT_CHARACTER && !char.is_whitespace());
 
         if first_valid_char.is_none() {
-            return Err("tag contained only whitespace or UTF8 replacement characters".into());
+            return Err("tag contained only whitespace or invalid unicode characters".into());
         }
 
         Ok(Self { key, value })
@@ -88,7 +88,7 @@ mod tests {
         // replacement char, so it should be an error (no valid chars).
         let bytes = &[32, 0b1111_0111];
         let key = String::from_utf8_lossy(bytes);
-        let _ = Tag::new(key, "value".into()).expect_err("?");
+        let _ = Tag::new(key, "value".into()).expect_err("invalid tag is rejected");
     }
 
     #[test]

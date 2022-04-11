@@ -151,8 +151,8 @@ impl Endpoint {
 }
 
 impl ProfileExporterV3 {
-    pub fn new<S: Into<Cow<'static, str>>>(
-        family: S,
+    pub fn new<IntoCow: Into<Cow<'static, str>>>(
+        family: IntoCow,
         tags: Option<Vec<Tag>>,
         endpoint: Endpoint,
     ) -> Result<ProfileExporterV3, Box<dyn Error>> {
@@ -201,7 +201,7 @@ impl ProfileExporterV3 {
             .header("Connection", "close");
 
         if let Some(api_key) = &self.endpoint.api_key {
-            builder = builder.header("DD-API-KEY", HeaderValue::from_str(api_key).expect("TODO"));
+            builder = builder.header("DD-API-KEY", HeaderValue::from_str(api_key).expect("Error setting api_key"));
         }
 
         if let Some(container_id) = container_id::get_container_id() {
