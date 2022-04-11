@@ -4,7 +4,7 @@
 #![allow(renamed_and_removed_lints)]
 #![allow(clippy::box_vec)]
 
-use crate::{ByteSlice, CharSlice, Slice, Timespec};
+use crate::{AsBytes, ByteSlice, CharSlice, Slice, Timespec};
 use ddprof_exporter as exporter;
 use ddprof_exporter::Tag;
 use exporter::ProfileExporterV3;

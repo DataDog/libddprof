@@ -13,7 +13,7 @@ mod profiles;
 mod slice;
 mod vec;
 
-pub use slice::{ByteSlice, CharSlice, Slice};
+pub use slice::{AsBytes, ByteSlice, CharSlice, Slice};
 pub use vec::Vec;
 
 /// Represents time since the Unix Epoch in seconds plus nanoseconds.

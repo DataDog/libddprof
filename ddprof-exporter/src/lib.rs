@@ -201,7 +201,10 @@ impl ProfileExporterV3 {
             .header("Connection", "close");
 
         if let Some(api_key) = &self.endpoint.api_key {
-            builder = builder.header("DD-API-KEY", HeaderValue::from_str(api_key).expect("Error setting api_key"));
+            builder = builder.header(
+                "DD-API-KEY",
+                HeaderValue::from_str(api_key).expect("Error setting api_key"),
+            );
         }
 
         if let Some(container_id) = container_id::get_container_id() {

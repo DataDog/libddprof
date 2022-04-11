@@ -5,7 +5,7 @@ use std::os::raw::c_char;
 use std::str::Utf8Error;
 
 /// Remember, the data inside of each member is potentially coming from FFI,
-/// so every operation
+/// so every operation on it is unsafe!
 #[repr(C)]
 #[derive(Copy, Clone)]
 pub struct Slice<'a, T: 'a> {
@@ -41,55 +41,50 @@ pub fn is_aligned_and_not_null<T>(ptr: *const T) -> bool {
     !ptr.is_null() && ptr as usize % std::mem::align_of::<T>() == 0
 }
 
-impl<'a> Slice<'a, u8> {
+pub trait AsBytes<'a> {
     /// # Safety
-    /// Slice needs to satisfy most of the requirements of std::slice::from_raw_parts but they can
-    /// relax the aligned and non-null requirements, as this function will detect these conditions
-    /// and return an empty slice instead.
-    pub unsafe fn as_bytes(&'a self) -> &'a [u8] {
+    /// Each implementor must document their safety requirements, but this is expected to be
+    /// unsafe as this is for FFI types.
+    unsafe fn as_bytes(&'a self) -> &'a [u8];
+
+    /// # Safety
+    /// This function has the same safety requirements as `as_bytes`.
+    unsafe fn try_to_utf8(&'a self) -> Result<&'a str, Utf8Error> {
+        std::str::from_utf8(self.as_bytes())
+    }
+
+    /// # Safety
+    /// This function has the same safety requirements as `as_bytes`
+    unsafe fn to_utf8_lossy(&'a self) -> Cow<'a, str> {
+        String::from_utf8_lossy(self.as_bytes())
+    }
+}
+
+impl<'a> AsBytes<'a> for Slice<'a, u8> {
+    /// # Safety
+    /// Slice needs to satisfy most of the requirements of std::slice::from_raw_parts except the
+    /// aligned and non-null requirements, as this function will detect these conditions and
+    /// return an empty slice instead.
+    unsafe fn as_bytes(&'a self) -> &'a [u8] {
         if is_aligned_and_not_null(self.ptr) {
             std::slice::from_raw_parts(self.ptr, self.len)
         } else {
             &[]
         }
     }
-
-    /// # Safety
-    /// This function has the same safety requirements as `as_bytes`.
-    pub unsafe fn try_to_utf8(&'a self) -> Result<&'a str, Utf8Error> {
-        std::str::from_utf8(self.as_bytes())
-    }
-
-    /// # Safety
-    /// This function has the same safety requirements as `as_bytes`
-    pub unsafe fn to_utf8_lossy(&'a self) -> Cow<'a, str> {
-        String::from_utf8_lossy(self.as_bytes())
-    }
 }
 
-impl<'a> Slice<'a, i8> {
+impl<'a> AsBytes<'a> for Slice<'a, i8> {
     /// # Safety
-    /// Slice needs to satisfy most of the requirements of std::slice::from_raw_parts but they can
-    /// relax the aligned and non-null requirements, as this function will detect these conditions
-    /// and return an empty slice instead.
-    pub unsafe fn as_bytes(&'a self) -> &'a [u8] {
+    /// Slice needs to satisfy most of the requirements of std::slice::from_raw_parts except the
+    /// aligned and non-null requirements, as this function will detect these conditions and
+    /// return an empty slice instead.
+    unsafe fn as_bytes(&'a self) -> &'a [u8] {
         if is_aligned_and_not_null(self.ptr) {
             std::slice::from_raw_parts(self.ptr as *const u8, self.len)
         } else {
             &[]
         }
-    }
-
-    /// # Safety
-    /// This function has the same safety requirements as `as_bytes`.
-    pub unsafe fn try_to_utf8(&'a self) -> Result<&'a str, Utf8Error> {
-        std::str::from_utf8(self.as_bytes())
-    }
-
-    /// # Safety
-    /// This function has the same safety requirements as `as_bytes`.
-    pub unsafe fn to_utf8_lossy(&'a self) -> Cow<'a, str> {
-        String::from_utf8_lossy(self.as_bytes())
     }
 }
 
@@ -187,7 +182,7 @@ impl<'a> From<&'a str> for Slice<'a, c_char> {
 mod test {
     use std::os::raw::c_char;
 
-    use crate::Slice;
+    use crate::*;
 
     #[test]
     fn slice_from_into_slice() {
