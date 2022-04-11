@@ -63,7 +63,7 @@ pub(crate) mod uds {
 
     pin_project! {
         #[project = ConnStreamProj]
-        pub(crate) enum ConnStream {
+        pub enum ConnStream {
             Tcp{ #[pin] transport: tokio::net::TcpStream },
             Tls{ #[pin] transport: tokio_rustls::client::TlsStream<tokio::net::TcpStream>},
             Udp{ #[pin] transport: tokio::net::UnixStream },
@@ -71,8 +71,8 @@ pub(crate) mod uds {
     }
 }
 
-use futures::{TryFutureExt, FutureExt};
 use futures::future::MaybeDone;
+use futures::{FutureExt, TryFutureExt};
 use hyper::client::HttpConnector;
 use hyper::service::Service;
 use hyper_rustls::MaybeHttpsStream;
@@ -85,7 +85,8 @@ use uds::{ConnStream, ConnStreamProj};
 pin_project_lite::pin_project! {
     #[project = ConnStreamProj]
     pub(crate) enum ConnStream {
-        Tcp{ #[pin] transport: hyper_rustls::MaybeHttpsStream<tokio::net::TcpStream> },
+        Tcp{ #[pin] transport: tokio::net::TcpStream },
+        Tls{ #[pin] transport: tokio_rustls::client::TlsStream<tokio::net::TcpStream>},
     }
 }
 
@@ -106,16 +107,17 @@ impl MaybeHttpsConnector {
 
 fn build_https_connector() -> Option<hyper_rustls::HttpsConnector<hyper::client::HttpConnector>> {
     let certs = load_root_certs()?;
-    let client_config =        
-    ClientConfig::builder()
+    let client_config = ClientConfig::builder()
         .with_safe_defaults()
         .with_root_certificates(certs)
         .with_no_client_auth();
-    Some(hyper_rustls::HttpsConnectorBuilder::new()
-    .with_tls_config(client_config)
-    .https_or_http()
-    .enable_http1()
-    .build())
+    Some(
+        hyper_rustls::HttpsConnectorBuilder::new()
+            .with_tls_config(client_config)
+            .https_or_http()
+            .enable_http1()
+            .build(),
+    )
 }
 
 fn load_root_certs() -> Option<rustls::RootCertStore> {
@@ -123,14 +125,11 @@ fn load_root_certs() -> Option<rustls::RootCertStore> {
     let mut valid_count = 0;
     let mut invalid_count = 0;
 
-    for cert in rustls_native_certs::load_native_certs().ok()?
-    {
+    for cert in rustls_native_certs::load_native_certs().ok()? {
         let cert = rustls::Certificate(cert.0);
         match roots.add(&cert) {
             Ok(_) => valid_count += 1,
-            Err(err) => {
-                invalid_count += 1
-            }
+            Err(err) => invalid_count += 1,
         }
     }
     if roots.is_empty() {
@@ -160,7 +159,8 @@ impl hyper::client::connect::Connection for ConnStream {
             Self::Tcp { transport } => transport.connected(),
             Self::Tls { transport } => {
                 let (tcp, tls) = transport.get_ref();
-                if tls.alpn_protocol() == Some(b"h2") { // TODO/QUESTION: is it safe, future proof, to implement this ourselves ? 
+                if tls.alpn_protocol() == Some(b"h2") {
+                    // TODO/QUESTION: is it safe, future proof, to implement this ourselves ?
                     tcp.connected().negotiated_h2()
                 } else {
                     tcp.connected()
@@ -233,40 +233,42 @@ impl hyper::service::Service<hyper::Uri> for MaybeHttpsConnector {
                 }
             }),
             Some("https") => match self {
-                Self::Http(_) => todo!(),// TODO: return error
+                Self::Http(_) => todo!(), // TODO: return error
                 Self::Https(c) => {
+                    let fut = c.call(uri);
                     Box::pin(async {
-                        match c.call(uri).await? {
+                        match fut.await? {
                             MaybeHttpsStream::Http(_) => todo!(),
-                            MaybeHttpsStream::Https(t) => {
-                                Ok(ConnStream::Tls {
-                                    transport: t
-                                })
-                            },
+                            MaybeHttpsStream::Https(t) => Ok(ConnStream::Tls { transport: t }),
                         }
                     })
-                },
+                }
             },
-            _ => {
-                let fut = async { 
-                    let stream = match self {
-                        MaybeHttpsConnector::Http(c) => ConnStream::Tcp { transport: c.call(uri).await? },
-                        MaybeHttpsConnector::Https(c) => match c.call(uri).await? {
-                            MaybeHttpsStream::Http(t) => ConnStream::Tcp { transport: t},
-                            MaybeHttpsStream::Https(t) => ConnStream::Tls{ transport: t},
-                        },
-                    };
-
-                    Ok(stream)
-                };
-                Box::pin(fut)
-            }
+            _ => match self {
+                Self::Http(c) => {
+                    let fut = c.call(uri);
+                    Box::pin(async {
+                        Ok(ConnStream::Tcp {
+                            transport: fut.await?,
+                        })
+                    })
+                }
+                Self::Https(c) => {
+                    let fut = c.call(uri);
+                    Box::pin(async {
+                        match fut.await? {
+                            MaybeHttpsStream::Http(t) => Ok(ConnStream::Tcp { transport: t }),
+                            MaybeHttpsStream::Https(t) => Ok(ConnStream::Tls { transport: t }),
+                        }
+                    })
+                }
+            },
         }
     }
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         match self {
-            MaybeHttpsConnector::Http(c) => c.poll_ready(cx).map_err(|e| e.into() ),
+            MaybeHttpsConnector::Http(c) => c.poll_ready(cx).map_err(|e| e.into()),
             MaybeHttpsConnector::Https(c) => c.poll_ready(cx),
         }
     }
@@ -280,6 +282,7 @@ mod tests {
     /// Verify that the Connector type implements the correct bound Connect + Clone
     /// to be able to use the hyper::Client
     fn test_hyper_client_from_connector() {
-        let _: hyper::Client<MaybeHttpsConnector> = hyper::Client::builder().build(MaybeHttpsConnector::new());
+        let _: hyper::Client<MaybeHttpsConnector> =
+            hyper::Client::builder().build(MaybeHttpsConnector::new());
     }
 }
