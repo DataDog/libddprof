@@ -8,6 +8,7 @@ pub(crate) enum Error {
     OperationTimedOut,
     UnixSockeUnsuported,
     CannotEstablishTlsConnection,
+    NoValidCertifacteRootsFound,
 }
 
 impl fmt::Display for Error {
@@ -17,6 +18,7 @@ impl fmt::Display for Error {
             Self::OperationTimedOut => "operation timed out",
             Self::UnixSockeUnsuported => "unix sockets unsuported on windows",
             Self::CannotEstablishTlsConnection => "cannot establish requested secure TLS connection",
+            Self::NoValidCertifacteRootsFound => "native tls couldn't find any valid certifacte roots"
         })
     }
 }

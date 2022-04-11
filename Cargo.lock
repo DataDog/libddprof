@@ -115,6 +115,7 @@ dependencies = [
 name = "ddprof-exporter"
 version = "0.5.0-rc.1"
 dependencies = [
+ "anyhow",
  "bytes",
  "chrono",
  "futures",
@@ -133,7 +134,10 @@ dependencies = [
  "percent-encoding",
  "pin-project-lite",
  "regex",
+ "rustls",
+ "rustls-native-certs",
  "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]
@@ -739,6 +743,7 @@ version = "0.20.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fbfeb8d0ddb84706bc597a5574ab8912817c52a397f819e5b614e2265206921"
 dependencies = [
+ "log",
  "ring",
  "sct",
  "webpki",
