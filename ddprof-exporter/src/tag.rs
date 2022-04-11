@@ -44,7 +44,11 @@ impl Tag {
             .chars()
             .find(|char| *char != std::char::REPLACEMENT_CHARACTER && !char.is_whitespace());
 
-        if first_valid_char.is_none() {
+        if let Some(char) = first_valid_char {
+            if char == ':' {
+                return Err("tag cannot start with a colon".into());
+            }
+        } else {
             return Err("tag contained only whitespace or invalid unicode characters".into());
         }
 
@@ -65,9 +69,67 @@ impl Tag {
     }
 }
 
+pub fn parse_tag_chunk<'a>(chunk: &'a str) -> Result<Tag, Cow<'static, str>> {
+    if let Some(first_colon_position) = chunk.find(':') {
+        // A tag which leads with a colon isn't explicitly invalid, but what
+        // are we supposed to do about it?
+        if first_colon_position == 0 {
+            return Err("tag cannot start with a colon".into());
+        }
+        if let Some(last_char) = chunk.chars().last() {
+            if last_char == ':' {
+                return Err("tag cannot end with a colon".into());
+            }
+        }
+        let name = &chunk[..first_colon_position];
+        let value = &chunk[(first_colon_position + 1)..];
+        Tag::new(Cow::Owned(name.into()), Cow::Owned(value.into()))
+    } else {
+        Tag::new(Cow::Owned(chunk.into()), Cow::Borrowed(""))
+    }
+}
+
+/// Parse a string of tags typically provided by environment variables
+/// The tags are expected to be either space or comma separated:
+///     "key1:value1,key2:value2"
+///     "key1:value1 key2:value2"
+/// Tag names and values are required and may not be empty.
+///
+/// Returns a tuple of the correctly parsed tags and an optional error message
+/// describing issues encountered during parsing.
+pub fn parse_tags(str: &str) -> (Vec<Tag>, Option<String>) {
+    let chunks = str
+        .split(&[',', ' '][..])
+        .filter(|str| !str.is_empty())
+        .map(parse_tag_chunk);
+
+    let mut tags = vec![];
+    let mut error_message = String::new();
+    for result in chunks {
+        match result {
+            Ok(tag) => tags.push(tag),
+            Err(err) => {
+                if error_message.is_empty() {
+                    error_message += "Errors while parsing tags: ";
+                } else {
+                    error_message += ", ";
+                }
+                error_message += err.as_ref();
+            }
+        }
+    }
+
+    let error_message = if error_message.is_empty() {
+        None
+    } else {
+        Some(error_message)
+    };
+    (tags, error_message)
+}
+
 #[cfg(test)]
 mod tests {
-    use crate::Tag;
+    use crate::{parse_tag_chunk, parse_tags, Tag};
 
     #[test]
     fn test_empty_key() {
@@ -103,7 +165,6 @@ mod tests {
         // that profile tags will then differ or cause failures compared to
         // trace tags. These require cross-team, cross-language collaboration.
         let cases = [
-            (":key-starts-with-colon".to_string(), "value".to_owned()),
             ("key".to_string(), "value-ends-with-colon:".to_owned()),
             (
                 "the-tag-length-is-over-200-characters".repeat(6),
@@ -115,6 +176,72 @@ mod tests {
             let result = Tag::new(case.0, case.1);
             // Again, these should fail, but it's not implemented yet
             assert!(result.is_ok())
+        }
+    }
+
+    #[test]
+    fn test_missing_colon_parsing() {
+        let tag = parse_tag_chunk("tag").unwrap();
+        assert_eq!("tag", tag.key());
+        assert!(tag.value.is_empty());
+    }
+
+    #[test]
+    fn test_leading_colon_parsing() {
+        let _ = parse_tag_chunk(":tag").expect_err("Cannot start with a colon");
+    }
+
+    #[test]
+    fn test_tailing_colon_parsing() {
+        let _ = parse_tag_chunk("tag:").expect_err("Cannot end with a colon");
+    }
+
+    #[test]
+    fn test_tags_parsing() {
+        // See the docs for what we convey to users about tags:
+        // https://docs.datadoghq.com/getting_started/tagging/
+
+        let cases = [
+            ("", vec![]),
+            (",", vec![]),
+            (" , ", vec![]),
+            (
+                "env:staging:east",
+                vec![Tag::new("env", "staging:east").unwrap()],
+            ),
+            ("value", vec![Tag::new("value", "").unwrap()]),
+            (
+                "state:utah,state:idaho",
+                vec![
+                    Tag::new("state", "utah").unwrap(),
+                    Tag::new("state", "idaho").unwrap(),
+                ],
+            ),
+            (
+                "key1:value1 key2:value2 key3:value3",
+                vec![
+                    Tag::new("key1", "value1").unwrap(),
+                    Tag::new("key2", "value2").unwrap(),
+                    Tag::new("key3", "value3").unwrap(),
+                ],
+            ),
+            (
+                // Testing consecutive separators being collapsed
+                "key1:value1, key2:value2 ,key3:value3 , key4:value4",
+                vec![
+                    Tag::new("key1", "value1").unwrap(),
+                    Tag::new("key2", "value2").unwrap(),
+                    Tag::new("key3", "value3").unwrap(),
+                    Tag::new("key4", "value4").unwrap(),
+                ],
+            ),
+        ];
+
+        for case in cases {
+            let expected = case.1;
+            let (actual, error_message) = parse_tags(case.0);
+            assert_eq!(expected, actual);
+            assert!(error_message.is_none());
         }
     }
 }
