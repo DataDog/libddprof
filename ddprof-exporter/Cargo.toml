@@ -32,7 +32,7 @@ rustls = { version = "0.20.4", default-features = false }
 rustls-native-certs = { version = "0.6" }
 hyper-rustls = { version = "0.23", default-features = false, features = ["native-tokio", "http1", "tls12"] }
 hex = "0.4"
-hyper-multipart-rfc7578 = { git = "https://github.com/paullegranddc/rust-multipart-rfc7578.git", rev = "8dcedc266e50876c04c91d24390fe9ac44f10b96" }
+hyper-multipart-rfc7578 = "0.7.0"
 
 [dev-dependencies]
 maplit = "1.0"
