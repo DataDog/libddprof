@@ -1,3 +1,6 @@
+// Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
+// This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021-Present Datadog, Inc.
+
 use std::{
     pin::Pin,
     task::{Context, Poll},
@@ -13,7 +16,8 @@ pin_project! {
     pub enum ConnStream {
         Tcp{ #[pin] transport: tokio::net::TcpStream },
         Tls{ #[pin] transport: tokio_rustls::client::TlsStream<tokio::net::TcpStream>},
-        #[cfg(unix)]
+        // Tokio doesn't handle unix sockets on windows
+        #[cfg(unix)] 
         Udp{ #[pin] transport: tokio::net::UnixStream },
     }
 }
