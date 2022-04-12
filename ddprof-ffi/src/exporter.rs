@@ -71,7 +71,7 @@ pub struct File<'a> {
 /// future.
 pub struct Request(exporter::Request);
 
-/// This type exists only to force cbindgen to expose an CancellationToken as an opaque type.
+// This type exists only to force cbindgen to expose an CancellationToken as an opaque type.
 pub struct CancellationToken(tokio_util::sync::CancellationToken);
 
 #[repr(C)]
