@@ -16,16 +16,16 @@ mod conn_stream;
 use conn_stream::{ConnStream, ConnStreamError};
 
 #[derive(Clone)]
-pub enum MaybeHttpsConnector {
+pub enum Connector {
     Http(hyper::client::HttpConnector),
     Https(hyper_rustls::HttpsConnector<hyper::client::HttpConnector>),
 }
 
-impl MaybeHttpsConnector {
+impl Connector {
     pub(crate) fn new() -> Self {
         match build_https_connector() {
-            Ok(connector) => MaybeHttpsConnector::Https(connector),
-            Err(_) => MaybeHttpsConnector::Http(HttpConnector::new()),
+            Ok(connector) => Connector::Https(connector),
+            Err(_) => Connector::Http(HttpConnector::new()),
         }
     }
 
@@ -81,7 +81,7 @@ fn load_root_certs() -> anyhow::Result<rustls::RootCertStore> {
     Ok(roots)
 }
 
-impl hyper::service::Service<hyper::Uri> for MaybeHttpsConnector {
+impl hyper::service::Service<hyper::Uri> for Connector {
     type Response = ConnStream;
     type Error = ConnStreamError;
 
@@ -100,8 +100,8 @@ impl hyper::service::Service<hyper::Uri> for MaybeHttpsConnector {
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         match self {
-            MaybeHttpsConnector::Http(c) => c.poll_ready(cx).map_err(|e| e.into()),
-            MaybeHttpsConnector::Https(c) => c.poll_ready(cx),
+            Connector::Http(c) => c.poll_ready(cx).map_err(|e| e.into()),
+            Connector::Https(c) => c.poll_ready(cx),
         }
     }
 }
@@ -114,23 +114,23 @@ mod tests {
     use super::*;
 
     #[test]
-    /// Verify that the MaybeHttpsConnector type implements the correct bound Connect + Clone
+    /// Verify that the Connector type implements the correct bound Connect + Clone
     /// to be able to use the hyper::Client
     fn test_hyper_client_from_connector() {
-        let _: hyper::Client<MaybeHttpsConnector> =
-            hyper::Client::builder().build(MaybeHttpsConnector::new());
+        let _: hyper::Client<Connector> =
+            hyper::Client::builder().build(Connector::new());
     }
 
     #[tokio::test]
-    /// Verify that MaybeHttpsConnector will only allow non tls connections if root certificates
+    /// Verify that Connector will only allow non tls connections if root certificates
     /// are not found
     async fn test_missing_root_certificates_only_allow_http_connections() {
         const ENV_SSL_CERT_FILE: &str = "SSL_CERT_FILE";
         let old_value = env::var(ENV_SSL_CERT_FILE).unwrap_or_default();
 
         env::set_var(ENV_SSL_CERT_FILE, "this/folder/does/not/exist");
-        let mut connector = MaybeHttpsConnector::new();
-        assert!(matches!(connector, MaybeHttpsConnector::Http(_)));
+        let mut connector = Connector::new();
+        assert!(matches!(connector, Connector::Http(_)));
 
         let stream = connector
             .call(hyper::Uri::from_static("https://example.com"))

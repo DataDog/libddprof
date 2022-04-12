@@ -23,7 +23,7 @@ pub use connector::uds::socket_path_to_uri;
 const DURATION_ZERO: std::time::Duration = std::time::Duration::from_millis(0);
 const DATADOG_CONTAINER_ID_HEADER: &str = "Datadog-Container-ID";
 
-type HttpClient = hyper::Client<connector::MaybeHttpsConnector, hyper::Body>;
+type HttpClient = hyper::Client<connector::Connector, hyper::Body>;
 
 pub struct Exporter {
     client: HttpClient,
@@ -227,7 +227,7 @@ impl Exporter {
         // Set idle to 0, which prevents the pipe being broken every 2nd request
         let client = hyper::Client::builder()
             .pool_max_idle_per_host(0)
-            .build(connector::MaybeHttpsConnector::new());
+            .build(connector::Connector::new());
         let runtime = tokio::runtime::Builder::new_current_thread()
             .enable_all()
             .build()?;
