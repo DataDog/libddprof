@@ -92,6 +92,8 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+  ddprof_ffi_PushTagResult_drop(tag_result);
+
   ddprof_ffi_NewProfileExporterV3Result exporter_new_result =
       ddprof_ffi_ProfileExporterV3_new(DDPROF_FFI_CHARSLICE_C("native"), &tags,
                                        endpoint);
@@ -128,7 +130,6 @@ int main(int argc, char *argv[]) {
     printf("Response code: %d\n", send_result.http_response.code);
   }
 
-  ddprof_ffi_PushTagResult_drop(tag_result);
   ddprof_ffi_NewProfileExporterV3Result_drop(exporter_new_result);
   ddprof_ffi_SendResult_drop(send_result);
   return exit_code;
