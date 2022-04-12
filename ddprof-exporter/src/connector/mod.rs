@@ -108,10 +108,8 @@ impl hyper::service::Service<hyper::Uri> for MaybeHttpsConnector {
 
 #[cfg(test)]
 mod tests {
-    use std::env;
-    use tokio;
-
     use hyper::service::Service;
+    use std::env;
 
     use super::*;
 

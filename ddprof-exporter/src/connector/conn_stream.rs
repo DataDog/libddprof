@@ -17,7 +17,7 @@ pin_project! {
         Tcp{ #[pin] transport: tokio::net::TcpStream },
         Tls{ #[pin] transport: tokio_rustls::client::TlsStream<tokio::net::TcpStream>},
         // Tokio doesn't handle unix sockets on windows
-        #[cfg(unix)] 
+        #[cfg(unix)]
         Udp{ #[pin] transport: tokio::net::UnixStream },
     }
 }
