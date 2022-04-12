@@ -8,17 +8,37 @@ use std::{
 
 use futures::{future, Future, FutureExt, TryFutureExt};
 use hyper_rustls::HttpsConnector;
-use pin_project::pin_project;
+use pin_project_lite::pin_project;
 
+#[cfg(unix)]
 pin_project! {
     #[derive(Debug)]
     #[project = ConnStreamProj]
     pub enum ConnStream {
-        Tcp{ #[pin] transport: tokio::net::TcpStream },
-        Tls{ #[pin] transport: tokio_rustls::client::TlsStream<tokio::net::TcpStream>},
+        Tcp {
+            #[pin] transport: tokio::net::TcpStream,
+        },
+        Tls {
+            #[pin] transport: tokio_rustls::client::TlsStream<tokio::net::TcpStream>,
+        },
         // Tokio doesn't handle unix sockets on windows
-        #[cfg(unix)]
-        Udp{ #[pin] transport: tokio::net::UnixStream },
+        Udp {
+            #[pin] transport: tokio::net::UnixStream,
+        },
+    }
+}
+
+#[cfg(not(unix))]
+pin_project! {
+    #[derive(Debug)]
+    #[project = ConnStreamProj]
+    pub enum ConnStream {
+        Tcp {
+            #[pin] transport: tokio::net::TcpStream,
+        },
+        Tls {
+            #[pin] transport: tokio_rustls::client::TlsStream<tokio::net::TcpStream>,
+        },
     }
 }
 
