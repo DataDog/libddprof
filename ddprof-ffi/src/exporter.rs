@@ -71,9 +71,7 @@ pub struct File<'a> {
 /// future.
 pub struct Request(exporter::Request);
 
-/// TODO: I could not figure out how to expose an opaque tokio_util::sync::CancellationToken so
-/// this is just a workaround to force cbindgen to do what we want.
-#[allow(dead_code)]
+/// This type exists only to force cbindgen to expose an CancellationToken as an opaque type.
 pub struct CancellationToken(tokio_util::sync::CancellationToken);
 
 #[repr(C)]
@@ -255,7 +253,7 @@ pub unsafe extern "C" fn profile_exporter_build(
 pub unsafe extern "C" fn profile_exporter_send(
     exporter: Option<NonNull<ProfileExporterV3>>,
     request: Option<Box<Request>>,
-    cancel: Option<Box<tokio_util::sync::CancellationToken>>,
+    cancel: Option<NonNull<CancellationToken>>,
 ) -> SendResult {
     let exp_ptr = match exporter {
         None => {
@@ -273,7 +271,7 @@ pub unsafe extern "C" fn profile_exporter_send(
         Some(req) => req,
     };
 
-    let cancel_option = cancel.map( |c| *c );
+    let cancel_option = unwrap_cancellation_token(cancel);
 
     match || -> Result<HttpStatus, Box<dyn std::error::Error>> {
         let response = exp_ptr.as_ref().send((*request_ptr).0, cancel_option)?;
@@ -285,31 +283,43 @@ pub unsafe extern "C" fn profile_exporter_send(
     }
 }
 
+fn unwrap_cancellation_token<'a>(cancel: Option<NonNull<CancellationToken>>) -> Option<&'a tokio_util::sync::CancellationToken> {
+    cancel.map( |c|
+        {
+            let wrapped_reference: &CancellationToken = unsafe { c.as_ref() };
+            let unwrapped_reference: &tokio_util::sync::CancellationToken = &(*wrapped_reference).0;
+
+            unwrapped_reference
+        }
+    )
+}
+
 /// Can be passed as an argument to send and then be used to asynchronously cancel it from a different thread.
 #[no_mangle]
 #[must_use]
-pub extern "C" fn ddprof_ffi_CancellationToken_new() -> Box<tokio_util::sync::CancellationToken> {
-    Box::new(tokio_util::sync::CancellationToken::new())
+pub extern "C" fn ddprof_ffi_CancellationToken_new() -> *mut CancellationToken {
+    Box::into_raw(Box::new(CancellationToken(tokio_util::sync::CancellationToken::new())))
 }
 
-/// Cancel request with the given token. Can only be called once for a given token.
+/// Cancel request with the given token. Note that cancellation is a terminal state; cancelling a token
+/// more than once does nothing.
 /// Returns `true` if token was successfully cancelled.
 #[no_mangle]
-pub extern "C" fn ddprof_ffi_CancellationToken_cancel(cancel: Option<Box<tokio_util::sync::CancellationToken>>) -> bool {
-    let cancel_ptr = match cancel {
-        Some(cancel) => cancel,
+pub extern "C" fn ddprof_ffi_CancellationToken_cancel(cancel: Option<NonNull<CancellationToken>>) -> bool {
+    let cancel_reference = match unwrap_cancellation_token(cancel) {
+        Some(reference) => reference,
         None => return false,
     };
 
-    if cancel_ptr.is_cancelled() { return false }
-    cancel_ptr.cancel();
+    if cancel_reference.is_cancelled() { return false }
+    cancel_reference.cancel();
 
     return true
 }
 
 #[no_mangle]
-pub extern "C" fn ddprof_ffi_CancellationToken_drop(cancel: Option<Box<tokio_util::sync::CancellationToken>>) {
-    std::mem::drop(cancel)
+pub extern "C" fn ddprof_ffi_CancellationToken_drop(_cancel: Option<Box<CancellationToken>>) {
+    // _cancel implicitly dropped because we've turned it into a Box
 }
 
 #[export_name = "ddprof_ffi_SendResult_drop"]

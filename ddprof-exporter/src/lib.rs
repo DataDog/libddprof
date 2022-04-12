@@ -8,7 +8,6 @@ use std::str::FromStr;
 
 use bytes::Bytes;
 pub use chrono::{DateTime, Utc};
-use futures_util::FutureExt;
 use hyper::header::HeaderValue;
 pub use hyper::Uri;
 use hyper_multipart_rfc7578::client::multipart;
@@ -90,7 +89,7 @@ impl Request {
     async fn send(
         self,
         client: &HttpClient,
-        cancel: CancellationToken,
+        cancel: &CancellationToken,
     ) -> Result<hyper::Response<hyper::Body>, Box<dyn std::error::Error>> {
         tokio::select! {
             _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation)?,
@@ -222,10 +221,10 @@ impl ProfileExporterV3 {
         )
     }
 
-    pub fn send(&self, request: Request, cancel: Option<CancellationToken>) -> Result<hyper::Response<hyper::Body>, Box<dyn Error>> {
+    pub fn send(&self, request: Request, cancel: Option<&CancellationToken>) -> Result<hyper::Response<hyper::Body>, Box<dyn Error>> {
         self.exporter
             .runtime
-            .block_on(request.send(&self.exporter.client, cancel.unwrap_or(CancellationToken::new())))
+            .block_on(request.send(&self.exporter.client, cancel.unwrap_or(&CancellationToken::new())))
     }
 }
 
@@ -258,7 +257,7 @@ impl Exporter {
             std::mem::swap(request.headers_mut(), &mut headers);
 
             let request: Request = request.into();
-            request.with_timeout(timeout).send(&self.client, CancellationToken::new()).await
+            request.with_timeout(timeout).send(&self.client, &CancellationToken::new()).await
         })
     }
 }
