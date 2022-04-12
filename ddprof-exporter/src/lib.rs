@@ -92,7 +92,7 @@ impl Request {
         cancel: &CancellationToken,
     ) -> Result<hyper::Response<hyper::Body>, Box<dyn std::error::Error>> {
         tokio::select! {
-            _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation)?,
+            _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation.into()),
             result = async {
                 Ok(match self.timeout {
                     Some(t) => tokio::time::timeout(t, client.request(self.req))

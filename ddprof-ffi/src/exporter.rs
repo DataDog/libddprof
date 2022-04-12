@@ -320,7 +320,7 @@ pub extern "C" fn ddprof_ffi_CancellationToken_cancel(
     }
     cancel_reference.cancel();
 
-    return true;
+    true
 }
 
 #[no_mangle]
