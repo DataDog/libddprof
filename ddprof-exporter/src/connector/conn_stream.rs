@@ -8,7 +8,7 @@ use std::{
 
 use futures::{future, Future, FutureExt, TryFutureExt};
 use hyper_rustls::HttpsConnector;
-use pin_project_lite::pin_project;
+use pin_project::pin_project;
 
 pin_project! {
     #[derive(Debug)]

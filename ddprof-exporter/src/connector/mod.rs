@@ -117,8 +117,7 @@ mod tests {
     /// Verify that the Connector type implements the correct bound Connect + Clone
     /// to be able to use the hyper::Client
     fn test_hyper_client_from_connector() {
-        let _: hyper::Client<Connector> =
-            hyper::Client::builder().build(Connector::new());
+        let _: hyper::Client<Connector> = hyper::Client::builder().build(Connector::new());
     }
 
     #[tokio::test]
