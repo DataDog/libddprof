@@ -121,7 +121,7 @@ int main(int argc, char *argv[]) {
   ddprof_ffi_CancellationToken* cancel = ddprof_ffi_CancellationToken_new();
 
   // As an example of CancellationToken usage, here we create a background thread that sleeps for some time and then
-  // cancels a request early (e.g. before the timeout in ddprof_ffi_ProfileExporterV3_build hits).
+  // cancels a request early (e.g. before the timeout in ddprof_ffi_ProfileExporterV3_send is hit).
   //
   // If the request is faster than the sleep time, no cancellation takes place.
   std::thread trigger_cancel_if_request_takes_too_long_thread(

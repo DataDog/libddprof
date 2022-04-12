@@ -303,8 +303,8 @@ pub extern "C" fn ddprof_ffi_CancellationToken_new() -> *mut CancellationToken {
     )))
 }
 
-/// Cancel request with the given token. Note that cancellation is a terminal state; cancelling a token
-/// more than once does nothing.
+/// Cancel send that is being called in another thread with the given token.
+/// Note that cancellation is a terminal state; cancelling a token more than once does nothing.
 /// Returns `true` if token was successfully cancelled.
 #[no_mangle]
 pub extern "C" fn ddprof_ffi_CancellationToken_cancel(
