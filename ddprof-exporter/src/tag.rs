@@ -44,15 +44,11 @@ impl Tag {
             .chars()
             .find(|char| *char != std::char::REPLACEMENT_CHARACTER && !char.is_whitespace());
 
-        if let Some(char) = first_valid_char {
-            if char == ':' {
-                return Err("tag cannot start with a colon".into());
-            }
-        } else {
-            return Err("tag contained only whitespace or invalid unicode characters".into());
+        match first_valid_char {
+            None => Err("tag contained only whitespace or invalid unicode characters".into()),
+            Some(':') => Err("tag cannot start with a colon".into()),
+            Some(_) => Ok(Self { key, value })
         }
-
-        Ok(Self { key, value })
     }
 
     pub fn key(&self) -> &Cow<str> {
