@@ -221,10 +221,15 @@ impl ProfileExporterV3 {
         )
     }
 
-    pub fn send(&self, request: Request, cancel: Option<&CancellationToken>) -> Result<hyper::Response<hyper::Body>, Box<dyn Error>> {
-        self.exporter
-            .runtime
-            .block_on(request.send(&self.exporter.client, cancel.unwrap_or(&CancellationToken::new())))
+    pub fn send(
+        &self,
+        request: Request,
+        cancel: Option<&CancellationToken>,
+    ) -> Result<hyper::Response<hyper::Body>, Box<dyn Error>> {
+        self.exporter.runtime.block_on(request.send(
+            &self.exporter.client,
+            cancel.unwrap_or(&CancellationToken::new()),
+        ))
     }
 }
 
@@ -257,7 +262,10 @@ impl Exporter {
             std::mem::swap(request.headers_mut(), &mut headers);
 
             let request: Request = request.into();
-            request.with_timeout(timeout).send(&self.client, &CancellationToken::new()).await
+            request
+                .with_timeout(timeout)
+                .send(&self.client, &CancellationToken::new())
+                .await
         })
     }
 }
