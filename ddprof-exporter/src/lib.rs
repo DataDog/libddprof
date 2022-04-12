@@ -14,7 +14,7 @@ use hyper_multipart_rfc7578::client::multipart;
 use tokio::runtime::Runtime;
 
 mod connector;
-mod container_id;
+pub mod container_id;
 mod errors;
 
 #[cfg(unix)]
