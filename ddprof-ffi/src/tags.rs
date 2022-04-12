@@ -55,20 +55,12 @@ pub struct ParseTagsResult {
 
 #[must_use]
 #[no_mangle]
-pub extern "C" fn ddprof_ffi_Vec_tag_parse(string: CharSlice) -> ParseTagsResult {
-    match unsafe { string.try_to_utf8() } {
-        Ok(string) => {
-            let (tags, error) = parse_tags(string);
-            ParseTagsResult {
-                tags: tags.into(),
-                error_message: error
-                    .map(|message| Box::new(crate::Vec::from(message.into_bytes()))),
-            }
-        }
-        Err(err) => ParseTagsResult {
-            tags: crate::Vec::default(),
-            error_message: Some(Box::new(crate::Vec::from(&err as &dyn Error))),
-        },
+pub unsafe extern "C" fn ddprof_ffi_Vec_tag_parse(string: CharSlice) -> ParseTagsResult {
+    let string = string.to_utf8_lossy();
+    let (tags, error) = parse_tags(string.as_ref());
+    ParseTagsResult {
+        tags: tags.into(),
+        error_message: error.map(|message| Box::new(crate::Vec::from(message.into_bytes()))),
     }
 }
 

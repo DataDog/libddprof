@@ -47,7 +47,7 @@ impl Tag {
         match first_valid_char {
             None => Err("tag contained only whitespace or invalid unicode characters".into()),
             Some(':') => Err("tag cannot start with a colon".into()),
-            Some(_) => Ok(Self { key, value })
+            Some(_) => Ok(Self { key, value }),
         }
     }
 

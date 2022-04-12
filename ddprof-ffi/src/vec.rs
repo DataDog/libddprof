@@ -113,9 +113,7 @@ impl<T> Vec<T> {
         if index >= self.len {
             None
         } else {
-            unsafe {
-                self.ptr.add(index).as_ref()
-            }
+            unsafe { self.ptr.add(index).as_ref() }
         }
     }
 }
