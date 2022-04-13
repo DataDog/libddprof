@@ -1,7 +1,6 @@
 use crate::{AsBytes, CharSlice};
 use ddprof_exporter::parse_tags;
 use ddprof_exporter::tag::Tag;
-use std::error::Error;
 
 #[must_use]
 #[no_mangle]
@@ -96,8 +95,7 @@ mod tests {
             }
         }
         let tag = tags.last().unwrap();
-        assert_eq!(tag.key(), "key1");
-        assert_eq!(tag.value(), "value1");
+        assert_eq!("key1:value1", tag.to_string())
     }
 
     #[test]
@@ -113,5 +111,24 @@ mod tests {
             assert_eq!(1, tags.len());
             assert_eq!("sound:woof", tags.get(0).unwrap().to_string());
         }
+    }
+
+    #[test]
+    fn test_parse() {
+        let dd_tags = "env:staging:east, tags:, env_staging:east"; // contains an error
+
+        // SAFETY: CharSlices from Rust strings are safe.
+        let result = unsafe { ddprof_ffi_Vec_tag_parse(CharSlice::from(dd_tags)) };
+        assert_eq!(2, result.tags.len());
+        assert_eq!("env:staging:east", result.tags.get(0).unwrap().to_string());
+        assert_eq!("env_staging:east", result.tags.get(1).unwrap().to_string());
+
+        // 'tags:' cannot end in a semi-colon, so expect an error.
+        assert!(result.error_message.is_some());
+        let error_message: Vec<u8> = (*result.error_message.unwrap()).into();
+        assert!(!error_message.is_empty());
+
+        let expected_error_message = b"Errors while parsing tags: tag 'tags:' ends with a colon";
+        assert_eq!(expected_error_message, error_message.as_slice())
     }
 }
