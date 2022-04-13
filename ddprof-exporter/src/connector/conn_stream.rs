@@ -8,54 +8,24 @@ use std::{
 
 use futures::{future, Future, FutureExt, TryFutureExt};
 use hyper_rustls::HttpsConnector;
+use pin_project::pin_project;
 
 #[derive(Debug)]
+#[pin_project(project=ConnStreamProj)]
 pub enum ConnStream {
     Tcp {
+        #[pin]
         transport: tokio::net::TcpStream,
     },
     Tls {
+        #[pin]
         transport: Box<tokio_rustls::client::TlsStream<tokio::net::TcpStream>>,
     },
     #[cfg(unix)]
     Udp {
+        #[pin]
         transport: tokio::net::UnixStream,
     },
-}
-
-pub enum ConnStreamProj<'pin>
-where
-    ConnStream: 'pin,
-{
-    Tcp {
-        transport: Pin<&'pin mut tokio::net::TcpStream>,
-    },
-    Tls {
-        transport: Pin<&'pin mut tokio_rustls::client::TlsStream<tokio::net::TcpStream>>,
-    },
-    #[cfg(unix)]
-    Udp {
-        transport: Pin<&'pin mut tokio::net::UnixStream>,
-    },
-}
-
-impl ConnStream {
-    pub(crate) fn project<'__pin>(self: Pin<&'__pin mut Self>) -> ConnStreamProj<'__pin> {
-        unsafe {
-            match self.get_unchecked_mut() {
-                Self::Tcp { transport } => ConnStreamProj::Tcp {
-                    transport: Pin::new_unchecked(transport),
-                },
-                Self::Tls { transport } => ConnStreamProj::Tls {
-                    transport: Pin::new_unchecked(transport),
-                },
-                #[cfg(unix)]
-                Self::Udp { transport } => ConnStreamProj::Udp {
-                    transport: Pin::new_unchecked(transport),
-                },
-            }
-        }
-    }
 }
 
 pub type ConnStreamError = Box<dyn std::error::Error + Send + Sync>;
