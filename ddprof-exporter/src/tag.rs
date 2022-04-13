@@ -34,7 +34,7 @@ impl Tag {
          * https://docs.datadoghq.com/getting_started/tagging/#defining-tags
          * The reason is that if tracing and profiling disagree on what valid
          * tags are, then the user experience is degraded.
-         * So... we mostly just pass it along and let others worry about it.
+         * So... we mostly just pass it along and handle it in the backend.
          * However, we do enforce some rules around the colon, because they
          * are likely to be errors (such as passed in empty string).
          */
