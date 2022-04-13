@@ -1,0 +1,4 @@
+*               @Datadog/libdatadog-core
+ddprof*/        @Datadog/profiling
+ddtelemetry/    @Datadog/instrumentations-reliability
+ruby/           @ivoanjo
