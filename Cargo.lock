@@ -104,6 +104,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 
 [[package]]
+name = "ddcommon"
+version = "0.5.0-rc.1"
+dependencies = [
+ "lazy_static",
+ "maplit",
+ "regex",
+]
+
+[[package]]
 name = "ddprof"
 version = "0.5.0-rc.1"
 dependencies = [
@@ -117,6 +126,7 @@ version = "0.5.0-rc.1"
 dependencies = [
  "bytes",
  "chrono",
+ "ddcommon",
  "futures",
  "futures-core",
  "futures-util",
@@ -126,13 +136,11 @@ dependencies = [
  "hyper",
  "hyper-multipart-rfc7578",
  "hyper-rustls",
- "lazy_static",
  "libc",
  "maplit",
  "mime_guess",
  "percent-encoding",
  "pin-project-lite",
- "regex",
  "tokio",
 ]
 
@@ -156,6 +164,24 @@ dependencies = [
  "prost",
  "prost-build",
  "ux",
+]
+
+[[package]]
+name = "ddtelemetry"
+version = "0.5.0-rc.1"
+dependencies = [
+ "anyhow",
+ "ddcommon",
+ "futures",
+ "http",
+ "lazy_static",
+ "regex",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "sys-info",
+ "tokio",
+ "uuid",
 ]
 
 [[package]]
@@ -1027,24 +1053,6 @@ checksum = "0b3a0d0aba8bf96a0e1ddfdc352fc53b3df7f39318c71854910c3c4b024ae52c"
 dependencies = [
  "cc",
  "libc",
-]
-
-[[package]]
-name = "telemetry"
-version = "0.0.1"
-dependencies = [
- "anyhow",
- "ddprof-exporter",
- "futures",
- "http",
- "lazy_static",
- "regex",
- "reqwest",
- "serde",
- "serde_json",
- "sys-info",
- "tokio",
- "uuid",
 ]
 
 [[package]]

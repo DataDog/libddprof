@@ -5,14 +5,14 @@
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let mut header = Default::default();
-    let telemetry = telemetry::build_full(&mut header).await;
+    let telemetry = ddtelemetry::build_full(&mut header).await;
 
     println!(
         "Payload to be sent: {}",
         serde_json::to_string_pretty(&telemetry).unwrap()
     );
 
-    telemetry::push_telemetry(&telemetry).await?;
+    ddtelemetry::push_telemetry(&telemetry).await?;
 
     println!("Telemetry submitted correctly");
     Ok(())

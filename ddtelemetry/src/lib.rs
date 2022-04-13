@@ -6,6 +6,7 @@ use std::{
     time,
 };
 
+use ddcommon::container_id;
 use lazy_static::lazy_static;
 
 use self::{
@@ -13,7 +14,6 @@ use self::{
     config::Config,
     data::{Application, Telemetry},
 };
-use ddprof_exporter::container_id;
 pub mod comms;
 pub mod config;
 pub mod data;

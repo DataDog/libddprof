@@ -14,7 +14,6 @@ use hyper_multipart_rfc7578::client::multipart;
 use tokio::runtime::Runtime;
 
 mod connector;
-pub mod container_id;
 mod errors;
 
 #[cfg(unix)]
@@ -204,7 +203,7 @@ impl ProfileExporterV3 {
             );
         }
 
-        if let Some(container_id) = container_id::get_container_id() {
+        if let Some(container_id) = ddcommon::container_id::get_container_id() {
             builder = builder.header(DATADOG_CONTAINER_ID_HEADER, container_id);
         }
 

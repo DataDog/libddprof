@@ -7,7 +7,8 @@ members = [
     "ddprof-exporter",
     "ddprof-ffi",
     "ddprof-profiles",
-    "telemetry",
+    "ddcommon",
+    "ddtelemetry",
 ]
 
 [profile.dev]
