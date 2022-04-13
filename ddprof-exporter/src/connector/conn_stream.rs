@@ -8,37 +8,53 @@ use std::{
 
 use futures::{future, Future, FutureExt, TryFutureExt};
 use hyper_rustls::HttpsConnector;
-use pin_project_lite::pin_project;
 
-#[cfg(unix)]
-pin_project! {
-    #[derive(Debug)]
-    #[project = ConnStreamProj]
-    pub enum ConnStream {
-        Tcp {
-            #[pin] transport: tokio::net::TcpStream,
-        },
-        Tls {
-            #[pin] transport: tokio_rustls::client::TlsStream<tokio::net::TcpStream>,
-        },
-        // Tokio doesn't handle unix sockets on windows
-        Udp {
-            #[pin] transport: tokio::net::UnixStream,
-        },
-    }
+#[derive(Debug)]
+pub enum ConnStream {
+    Tcp {
+        transport: tokio::net::TcpStream,
+    },
+    Tls {
+        transport: Box<tokio_rustls::client::TlsStream<tokio::net::TcpStream>>,
+    },
+    #[cfg(unix)]
+    Udp {
+        transport: tokio::net::UnixStream,
+    },
 }
 
-#[cfg(not(unix))]
-pin_project! {
-    #[derive(Debug)]
-    #[project = ConnStreamProj]
-    pub enum ConnStream {
-        Tcp {
-            #[pin] transport: tokio::net::TcpStream,
-        },
-        Tls {
-            #[pin] transport: tokio_rustls::client::TlsStream<tokio::net::TcpStream>,
-        },
+pub enum ConnStreamProj<'pin>
+where
+    ConnStream: 'pin,
+{
+    Tcp {
+        transport: Pin<&'pin mut tokio::net::TcpStream>,
+    },
+    Tls {
+        transport: Pin<&'pin mut tokio_rustls::client::TlsStream<tokio::net::TcpStream>>,
+    },
+    #[cfg(unix)]
+    Udp {
+        transport: Pin<&'pin mut tokio::net::UnixStream>,
+    },
+}
+
+impl ConnStream {
+    pub(crate) fn project<'__pin>(self: Pin<&'__pin mut Self>) -> ConnStreamProj<'__pin> {
+        unsafe {
+            match self.get_unchecked_mut() {
+                Self::Tcp { transport } => ConnStreamProj::Tcp {
+                    transport: Pin::new_unchecked(transport),
+                },
+                Self::Tls { transport } => ConnStreamProj::Tls {
+                    transport: Pin::new_unchecked(transport),
+                },
+                #[cfg(unix)]
+                Self::Udp { transport } => ConnStreamProj::Udp {
+                    transport: Pin::new_unchecked(transport),
+                },
+            }
+        }
     }
 }
 
@@ -86,9 +102,9 @@ impl ConnStream {
                     future::ready(Ok(ConnStream::Tcp { transport: t }))
                 }
             }
-            hyper_rustls::MaybeHttpsStream::Https(t) => {
-                future::ready(Ok(ConnStream::Tls { transport: t }))
-            }
+            hyper_rustls::MaybeHttpsStream::Https(t) => future::ready(Ok(ConnStream::Tls {
+                transport: Box::from(t),
+            })),
         })
     }
 }
