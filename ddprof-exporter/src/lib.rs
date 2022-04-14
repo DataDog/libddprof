@@ -12,6 +12,7 @@ use hyper::header::HeaderValue;
 pub use hyper::Uri;
 use hyper_multipart_rfc7578::client::multipart;
 use tokio::runtime::Runtime;
+use tokio_util::sync::CancellationToken;
 
 mod connector;
 mod container_id;
@@ -86,13 +87,19 @@ impl Request {
     async fn send(
         self,
         client: &HttpClient,
+        cancel: &CancellationToken,
     ) -> Result<hyper::Response<hyper::Body>, Box<dyn std::error::Error>> {
-        Ok(match self.timeout {
-            Some(t) => tokio::time::timeout(t, client.request(self.req))
-                .await
-                .map_err(|_| crate::errors::Error::OperationTimedOut)?,
-            None => client.request(self.req).await,
-        }?)
+        tokio::select! {
+            _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation.into()),
+            result = async {
+                Ok(match self.timeout {
+                    Some(t) => tokio::time::timeout(t, client.request(self.req))
+                        .await
+                        .map_err(|_| crate::errors::Error::OperationTimedOut)?,
+                    None => client.request(self.req).await,
+                }?)}
+            => result,
+        }
     }
 }
 
@@ -217,10 +224,15 @@ impl ProfileExporterV3 {
         )
     }
 
-    pub fn send(&self, request: Request) -> Result<hyper::Response<hyper::Body>, Box<dyn Error>> {
-        self.exporter
-            .runtime
-            .block_on(async { request.send(&self.exporter.client).await })
+    pub fn send(
+        &self,
+        request: Request,
+        cancel: Option<&CancellationToken>,
+    ) -> Result<hyper::Response<hyper::Body>, Box<dyn Error>> {
+        self.exporter.runtime.block_on(request.send(
+            &self.exporter.client,
+            cancel.unwrap_or(&CancellationToken::new()),
+        ))
     }
 }
 
@@ -253,7 +265,10 @@ impl Exporter {
             std::mem::swap(request.headers_mut(), &mut headers);
 
             let request: Request = request.into();
-            request.with_timeout(timeout).send(&self.client).await
+            request
+                .with_timeout(timeout)
+                .send(&self.client, &CancellationToken::new())
+                .await
         })
     }
 }
