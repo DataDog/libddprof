@@ -17,6 +17,9 @@ use tokio_util::sync::CancellationToken;
 mod connector;
 mod container_id;
 mod errors;
+pub mod tag;
+
+pub use tag::*;
 
 #[cfg(unix)]
 pub use connector::uds::socket_path_to_uri;
@@ -31,11 +34,6 @@ pub struct Exporter {
     runtime: Runtime,
 }
 
-pub struct Tag {
-    pub name: Cow<'static, str>,
-    pub value: Cow<'static, str>,
-}
-
 pub struct FieldsV3 {
     pub start: DateTime<Utc>,
     pub end: DateTime<Utc>,
@@ -43,14 +41,14 @@ pub struct FieldsV3 {
 
 pub struct Endpoint {
     url: Uri,
-    api_key: Option<String>,
+    api_key: Option<Cow<'static, str>>,
 }
 
 pub struct ProfileExporterV3 {
     exporter: Exporter,
     endpoint: Endpoint,
-    family: String,
-    tags: Vec<Tag>,
+    family: Cow<'static, str>,
+    tags: Option<Vec<Tag>>,
 }
 
 pub struct Request {
@@ -146,20 +144,23 @@ impl Endpoint {
     /// # Arguments
     /// * `site` - e.g. "datadoghq.com".
     /// * `api_key`
-    pub fn agentless<S: AsRef<str>>(site: S, api_key: S) -> Result<Endpoint, Box<dyn Error>> {
-        let intake_url = format!("https://intake.profile.{}/v1/input", site.as_ref());
+    pub fn agentless<AsStrRef: AsRef<str>, IntoCow: Into<Cow<'static, str>>>(
+        site: AsStrRef,
+        api_key: IntoCow,
+    ) -> Result<Endpoint, Box<dyn Error>> {
+        let intake_url: String = format!("https://intake.profile.{}/v1/input", site.as_ref());
 
         Ok(Endpoint {
             url: Uri::from_str(intake_url.as_str())?,
-            api_key: Some(String::from(api_key.as_ref())),
+            api_key: Some(api_key.into()),
         })
     }
 }
 
 impl ProfileExporterV3 {
-    pub fn new<S: Into<String>>(
-        family: S,
-        tags: Vec<Tag>,
+    pub fn new<IntoCow: Into<Cow<'static, str>>>(
+        family: IntoCow,
+        tags: Option<Vec<Tag>>,
         endpoint: Endpoint,
     ) -> Result<ProfileExporterV3, Box<dyn Error>> {
         Ok(Self {
@@ -176,7 +177,7 @@ impl ProfileExporterV3 {
         start: chrono::DateTime<chrono::Utc>,
         end: chrono::DateTime<chrono::Utc>,
         files: &[File],
-        additional_tags: &[Tag],
+        additional_tags: Option<&Vec<Tag>>,
         timeout: std::time::Duration,
     ) -> Result<Request, Box<dyn Error>> {
         let mut form = multipart::Form::default();
@@ -184,10 +185,12 @@ impl ProfileExporterV3 {
         form.add_text("version", "3");
         form.add_text("start", start.format("%Y-%m-%dT%H:%M:%S%.9fZ").to_string());
         form.add_text("end", end.format("%Y-%m-%dT%H:%M:%S%.9fZ").to_string());
-        form.add_text("family", String::from(&self.family));
+        form.add_text("family", self.family.to_owned());
 
-        for tag in self.tags.iter().chain(additional_tags.iter()) {
-            form.add_text("tags[]", format!("{}:{}", tag.name, tag.value));
+        for tags in self.tags.as_ref().iter().chain(additional_tags.iter()) {
+            for tag in tags.iter() {
+                form.add_text("tags[]", tag.to_string());
+            }
         }
 
         for file in files {
@@ -207,7 +210,7 @@ impl ProfileExporterV3 {
         if let Some(api_key) = &self.endpoint.api_key {
             builder = builder.header(
                 "DD-API-KEY",
-                HeaderValue::from_str(api_key.as_str()).expect("TODO"),
+                HeaderValue::from_str(api_key).expect("Error setting api_key"),
             );
         }
 

@@ -83,17 +83,22 @@ int main(int argc, char *argv[]) {
 
   ddprof_ffi_EndpointV3 endpoint = ddprof_ffi_EndpointV3_agentless(
       DDPROF_FFI_CHARSLICE_C("datad0g.com"), to_slice_c_char(api_key));
-  ddprof_ffi_Tag tags[] = {
-      {DDPROF_FFI_CHARSLICE_C("service"), to_slice_c_char(service)},
-  };
+
+  ddprof_ffi_Vec_tag tags = ddprof_ffi_Vec_tag_new();
+  ddprof_ffi_PushTagResult tag_result = ddprof_ffi_Vec_tag_push(
+      &tags, DDPROF_FFI_CHARSLICE_C("service"), to_slice_c_char(service));
+  if (tag_result.tag == DDPROF_FFI_PUSH_TAG_RESULT_ERR) {
+    print_error("Failed to push tag: ", tag_result.err);
+    ddprof_ffi_PushTagResult_drop(tag_result);
+    return 1;
+  }
+
+  ddprof_ffi_PushTagResult_drop(tag_result);
+
   ddprof_ffi_NewProfileExporterV3Result exporter_new_result =
-      ddprof_ffi_ProfileExporterV3_new(
-          DDPROF_FFI_CHARSLICE_C("native"),
-          ddprof_ffi_Slice_tag{
-              .ptr = tags,
-              .len = sizeof(tags) / sizeof(tags[0]),
-          },
-          endpoint);
+      ddprof_ffi_ProfileExporterV3_new(DDPROF_FFI_CHARSLICE_C("native"), &tags,
+                                       endpoint);
+  ddprof_ffi_Vec_tag_drop(tags);
 
   if (exporter_new_result.tag ==
       DDPROF_FFI_NEW_PROFILE_EXPORTER_V3_RESULT_ERR) {
@@ -112,27 +117,27 @@ int main(int argc, char *argv[]) {
   ddprof_ffi_Slice_file files = {.ptr = files_,
                                  .len = sizeof files_ / sizeof *files_};
 
-  ddprof_ffi_Slice_tag additional_tags = {.ptr = nullptr, .len = 0};
-
   ddprof_ffi_Request *request = ddprof_ffi_ProfileExporterV3_build(
-      exporter, encoded_profile->start, encoded_profile->end, files,
-      additional_tags, 30000);
+      exporter, encoded_profile->start, encoded_profile->end, files, nullptr,
+      30000);
 
-  ddprof_ffi_CancellationToken* cancel = ddprof_ffi_CancellationToken_new();
+  ddprof_ffi_CancellationToken *cancel = ddprof_ffi_CancellationToken_new();
 
-  // As an example of CancellationToken usage, here we create a background thread that sleeps for some time and then
-  // cancels a request early (e.g. before the timeout in ddprof_ffi_ProfileExporterV3_send is hit).
+  // As an example of CancellationToken usage, here we create a background
+  // thread that sleeps for some time and then cancels a request early (e.g.
+  // before the timeout in ddprof_ffi_ProfileExporterV3_send is hit).
   //
   // If the request is faster than the sleep time, no cancellation takes place.
   std::thread trigger_cancel_if_request_takes_too_long_thread(
-    [](ddprof_ffi_CancellationToken* cancel) {
-      int timeout_ms = 5000;
-      std::this_thread::sleep_for(std::chrono::milliseconds(timeout_ms));
-      printf("Request took longer than %d ms, triggering asynchronous cancellation\n", timeout_ms);
-      ddprof_ffi_CancellationToken_cancel(cancel);
-    },
-    cancel
-  );
+      [](ddprof_ffi_CancellationToken *cancel) {
+        int timeout_ms = 5000;
+        std::this_thread::sleep_for(std::chrono::milliseconds(timeout_ms));
+        printf("Request took longer than %d ms, triggering asynchronous "
+               "cancellation\n",
+               timeout_ms);
+        ddprof_ffi_CancellationToken_cancel(cancel);
+      },
+      cancel);
   trigger_cancel_if_request_takes_too_long_thread.detach();
 
   int exit_code = 0;
