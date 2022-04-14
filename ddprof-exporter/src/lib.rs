@@ -3,6 +3,7 @@
 
 use std::borrow::Cow;
 use std::error::Error;
+use std::future;
 use std::io::Cursor;
 use std::str::FromStr;
 
@@ -87,10 +88,15 @@ impl Request {
     async fn send(
         self,
         client: &HttpClient,
-        cancel: &CancellationToken,
+        cancel: Option<&CancellationToken>,
     ) -> Result<hyper::Response<hyper::Body>, Box<dyn std::error::Error>> {
         tokio::select! {
-            _ = cancel.cancelled() => Err(crate::errors::Error::UserRequestedCancellation.into()),
+            _ = async { match cancel {
+                    Some(cancellation_token) => cancellation_token.cancelled().await,
+                    // If no token is provided, future::pending() provides a no-op future that never resolves
+                    None => future::pending().await,
+                }}
+            => Err(crate::errors::Error::UserRequestedCancellation.into()),
             result = async {
                 Ok(match self.timeout {
                     Some(t) => tokio::time::timeout(t, client.request(self.req))
@@ -229,10 +235,9 @@ impl ProfileExporterV3 {
         request: Request,
         cancel: Option<&CancellationToken>,
     ) -> Result<hyper::Response<hyper::Body>, Box<dyn Error>> {
-        self.exporter.runtime.block_on(request.send(
-            &self.exporter.client,
-            cancel.unwrap_or(&CancellationToken::new()),
-        ))
+        self.exporter
+            .runtime
+            .block_on(request.send(&self.exporter.client, cancel))
     }
 }
 
@@ -265,10 +270,7 @@ impl Exporter {
             std::mem::swap(request.headers_mut(), &mut headers);
 
             let request: Request = request.into();
-            request
-                .with_timeout(timeout)
-                .send(&self.client, &CancellationToken::new())
-                .await
+            request.with_timeout(timeout).send(&self.client, None).await
         })
     }
 }
