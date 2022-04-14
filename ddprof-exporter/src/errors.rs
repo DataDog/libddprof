@@ -20,13 +20,13 @@ impl fmt::Display for Error {
         f.write_str(match self {
             Self::InvalidUrl => "invalid url",
             Self::OperationTimedOut => "operation timed out",
-	    Self::UnixSocketUnsupported => "unix sockets unsupported on windows",
+            Self::UnixSocketUnsupported => "unix sockets unsupported on windows",
             Self::CannotEstablishTlsConnection => {
                 "cannot establish requested secure TLS connection"
-            },
+            }
             Self::NoValidCertifacteRootsFound => {
                 "native tls couldn't find any valid certifacte roots"
-            },
+            }
             Self::UserRequestedCancellation => "operation cancelled by user",
         })
     }
