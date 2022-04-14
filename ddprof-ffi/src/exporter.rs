@@ -247,6 +247,38 @@ pub extern "C" fn ddprof_ffi_CancellationToken_new() -> *mut CancellationToken {
     )))
 }
 
+#[no_mangle]
+#[must_use]
+/// A cloned CancellationToken is connected to the CancellationToken it was created from.
+/// Either the cloned or the original token can be used to cancel or provided as arguments to send.
+/// The useful part is that they have independent lifetimes and can be dropped separately.
+///
+/// Thus, it's possible to do something like:
+/// ```c
+/// cancel_t1 = ddprof_ffi_CancellationToken_new();
+/// cancel_t2 = ddprof_ffi_CancellationToken_clone(cancel_t1);
+///
+/// // On thread t1:
+///     ddprof_ffi_ProfileExporterV3_send(..., cancel_t1);
+///     ddprof_ffi_CancellationToken_drop(cancel_t1);
+///
+/// // On thread t2:
+///     ddprof_ffi_CancellationToken_cancel(cancel_t2);
+///     ddprof_ffi_CancellationToken_drop(cancel_t2);
+/// ```
+///
+/// Without clone, both t1 and t2 would need to synchronize to make sure neither was using the cancel
+/// before it could be dropped. With clone, there is no need for such synchronization, both threads
+/// have their own cancel and should drop that cancel after they are done with it.
+pub extern "C" fn ddprof_ffi_CancellationToken_clone(
+    cancel: Option<NonNull<CancellationToken>>,
+) -> *mut CancellationToken {
+    match unwrap_cancellation_token(cancel) {
+        Some(reference) => Box::into_raw(Box::new(CancellationToken(reference.clone()))),
+        None => std::ptr::null_mut(),
+    }
+}
+
 /// Cancel send that is being called in another thread with the given token.
 /// Note that cancellation is a terminal state; cancelling a token more than once does nothing.
 /// Returns `true` if token was successfully cancelled.
