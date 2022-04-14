@@ -11,6 +11,7 @@ use hyper_rustls::HttpsConnector;
 use pin_project::pin_project;
 
 #[pin_project(project=ConnStreamProj)]
+#[derive(Debug)]
 pub enum ConnStream {
     Tcp {
         #[pin]
