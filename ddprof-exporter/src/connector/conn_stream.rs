@@ -10,7 +10,6 @@ use futures::{future, Future, FutureExt, TryFutureExt};
 use hyper_rustls::HttpsConnector;
 use pin_project::pin_project;
 
-#[derive(Debug)]
 #[pin_project(project=ConnStreamProj)]
 pub enum ConnStream {
     Tcp {
