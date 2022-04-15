@@ -108,9 +108,21 @@ checksum = "5827cebf4670468b8772dd191856768aedcb1b0278a04f989f7766351917b9dc"
 name = "ddcommon"
 version = "0.5.0-rc.1"
 dependencies = [
+ "anyhow",
+ "futures",
+ "futures-core",
+ "futures-util",
+ "hex",
+ "hyper",
+ "hyper-rustls",
  "lazy_static",
  "maplit",
+ "pin-project",
  "regex",
+ "rustls",
+ "rustls-native-certs",
+ "tokio",
+ "tokio-rustls",
 ]
 
 [[package]]
@@ -125,28 +137,21 @@ dependencies = [
 name = "ddprof-exporter"
 version = "0.6.0-rc.1"
 dependencies = [
- "anyhow",
  "bytes",
  "chrono",
  "ddcommon",
  "futures",
  "futures-core",
  "futures-util",
- "hex",
  "http",
  "http-body",
  "hyper",
  "hyper-multipart-rfc7578",
- "hyper-rustls",
  "libc",
  "maplit",
  "mime_guess",
  "percent-encoding",
- "pin-project",
- "rustls",
- "rustls-native-certs",
  "tokio",
- "tokio-rustls",
  "tokio-util",
 ]
 

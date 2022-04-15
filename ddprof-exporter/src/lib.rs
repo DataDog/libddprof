@@ -15,7 +15,7 @@ use hyper_multipart_rfc7578::client::multipart;
 use tokio::runtime::Runtime;
 use tokio_util::sync::CancellationToken;
 
-mod connector;
+use ddcommon::connector;
 mod errors;
 pub mod tag;
 
