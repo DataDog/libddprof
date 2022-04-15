@@ -17,3 +17,25 @@ debug = 1 # line tables only
 lto = true
 codegen-units = 1
 opt-level = "s" # optimize for size
+
+[workspace.metadata.raze]
+workspace_path = "//third-party"
+
+# The set of targets to generate BUILD rules for.
+targets = [
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+    "x86_64-unknown-linux-gnu",
+]
+
+render_package_aliases = false
+default_gen_buildrs = true
+experimental_api = true
+genmode = "Remote"
+
+[workspace.metadata.raze.crates.ring.'*']
+compile_data_attr = "glob([\"**/*.der\"])"
+
+
+[workspace.metadata.raze.crates.webpki.'*']
+compile_data_attr = "glob([\"**/*.der\"])"

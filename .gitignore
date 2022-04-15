@@ -12,6 +12,7 @@ cmake-build-debug
 deliverables
 target
 tmp
+bazel-*
 
 #==============================================================================#
 # Files to ignore

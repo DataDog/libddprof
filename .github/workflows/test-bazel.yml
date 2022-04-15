@@ -1,0 +1,23 @@
+name: Ruby gem scaffolding
+on:
+  push:
+
+jobs:
+  test:
+    runs-on: "${{matrix.os}}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v2
+      - uses: bazelbuild/setup-bazelisk@v1
+      - name: Mount bazel cache
+        uses: actions/cache@v2
+        with:
+          path: "~/.cache/bazel"
+          key: ${{ runner.os }}-bazel
+      - run: bazel test ...
