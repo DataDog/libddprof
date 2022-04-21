@@ -68,3 +68,9 @@ jobs:
             --output /tmp/CI.yaml \
             --previous LICENSE-3rdparty.yml \
             --check-previous 
+      - name: export the generated license file on failure
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v1
+        with:
+          name: LICENSE-3rdparty.yml
+          path: /tmp/CI.yaml
