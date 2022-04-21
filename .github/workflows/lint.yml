@@ -68,7 +68,3 @@ jobs:
             --output /tmp/CI.yaml \
             --previous LICENSE-3rdparty.yml \
             --check-previous 
-
-    
-    
-        
