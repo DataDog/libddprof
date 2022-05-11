@@ -1,70 +1,7 @@
 // Unless explicitly stated otherwise all files in this repository are licensed under the Apache License Version 2.0.
 // This product includes software developed at Datadog (https://www.datadoghq.com/). Copyright 2021-Present Datadog, Inc.
 
-// This lint complains if we implement Hash by hand but derive PartialEq. This
-// is a good lint because these two things must agree.
-// However, we cannot control the prost-generated code, so cannot remove
-// PartialEq or alternatively derive Hash, so we allow this lint.
-#![allow(clippy::derive_hash_xor_eq)]
-
-use std::hash::{Hash, Hasher};
-
 include!(concat!(env!("OUT_DIR"), "/pprof.rs"));
-
-impl Copy for Function {}
-impl Eq for Function {}
-
-impl Hash for Function {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
-        self.name.hash(state);
-        self.system_name.hash(state);
-        self.filename.hash(state);
-        self.start_line.hash(state);
-    }
-}
-
-impl Copy for Label {}
-impl Eq for Label {}
-
-impl Hash for Label {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.key.hash(state);
-        self.str.hash(state);
-        self.num.hash(state);
-        self.num_unit.hash(state);
-    }
-}
-
-impl Copy for Line {}
-impl Eq for Line {}
-impl Hash for Line {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.function_id.hash(state);
-        self.line.hash(state);
-    }
-}
-
-impl Eq for Location {}
-impl Hash for Location {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.id.hash(state);
-        self.mapping_id.hash(state);
-        self.address.hash(state);
-        self.line.hash(state);
-        self.is_folded.hash(state);
-    }
-}
-
-impl Copy for ValueType {}
-impl Eq for ValueType {}
-
-impl Hash for ValueType {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.r#type.hash(state);
-        self.unit.hash(state);
-    }
-}
 
 #[cfg(test)]
 mod test {
