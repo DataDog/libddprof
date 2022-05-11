@@ -726,7 +726,7 @@ mod api_test {
         /* The strings may not be interned to the same location, but they should
          * still match if we resolve them.
          */
-        let period_type = profile.period_type.clone().unwrap();
+        let period_type = profile.period_type.unwrap();
         let r#type = period_type.r#type;
         let unit = period_type.unit;
         assert_eq!(
